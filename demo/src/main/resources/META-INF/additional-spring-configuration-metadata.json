@@ -1,0 +1,74 @@
+{
+  "groups": [
+    {
+      "name": "app.jwt",
+      "description": "Configurazione dei token JWT emessi dall'applicazione."
+    },
+    {
+      "name": "app.storage.s3",
+      "description": "Configurazione dello storage AWS S3 per i file caricati."
+    },
+    {
+      "name": "app.rate-limit",
+      "description": "Configurazione del rate limiting delle API (Bucket4j)."
+    },
+    {
+      "name": "app.cors",
+      "description": "Configurazione CORS per i client frontend."
+    },
+    {
+      "name": "app.google",
+      "description": "Configurazione dell'accesso con Google (Sign in with Google)."
+    }
+  ],
+  "properties": [
+    {
+      "name": "app.jwt.issuer",
+      "type": "java.lang.String",
+      "description": "Valore della claim 'iss' (emittente) inserita nei JWT.",
+      "defaultValue": "ristorandoti"
+    },
+    {
+      "name": "app.jwt.expiration-minutes",
+      "type": "java.lang.Long",
+      "description": "Durata di validità dei JWT, in minuti.",
+      "defaultValue": 60
+    },
+    {
+      "name": "app.storage.s3.bucket",
+      "type": "java.lang.String",
+      "description": "Nome del bucket S3 in cui salvare i file."
+    },
+    {
+      "name": "app.storage.s3.region",
+      "type": "java.lang.String",
+      "description": "Regione AWS del bucket S3 (es. eu-south-1)."
+    },
+    {
+      "name": "app.rate-limit.capacity",
+      "type": "java.lang.Long",
+      "description": "Numero massimo di richieste consentite nel bucket (capacità del token bucket)."
+    },
+    {
+      "name": "app.rate-limit.refill-tokens",
+      "type": "java.lang.Long",
+      "description": "Numero di token ricaricati a ogni periodo di refill."
+    },
+    {
+      "name": "app.rate-limit.refill-period",
+      "type": "java.time.Duration",
+      "description": "Intervallo di ricarica dei token (es. 1m, 30s)."
+    },
+    {
+      "name": "app.cors.allowed-origins",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Origini autorizzate a chiamare le API dal browser, separate da virgola."
+    },
+    {
+      "name": "app.google.client-id",
+      "type": "java.lang.String",
+      "description": "Client ID OAuth 'Applicazione web' della Google Cloud Console, usato per validare gli ID token Google. Se vuoto, l'accesso con Google è disabilitato (503).",
+      "defaultValue": ""
+    }
+  ]
+}

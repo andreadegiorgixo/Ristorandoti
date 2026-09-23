@@ -1,0 +1,53 @@
+<section class="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+  <span class="eyebrow">Chi siamo</span>
+
+  <div class="mt-6 grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+    <div>
+      <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">Ciao, sono Andrea.</h1>
+      <div class="mt-6 space-y-4 text-lg leading-relaxed text-slate-600">
+        <p>
+          Sono uno sviluppatore software e ho creato Ristorandoti con un’idea semplice: dare ai ristoratori
+          uno spazio tutto loro, dove il lavoro fatto ogni giorno in cucina e in sala possa essere visto e riconosciuto.
+        </p>
+        <p>
+          Il mio percorso mi ha portato a costruire prodotti digitali curando sia l’esperienza utente sia
+          l’architettura tecnica. Qui metto queste competenze al servizio di un settore che amo.
+        </p>
+      </div>
+
+      <ol class="mt-10 space-y-4">
+        @for (step of milestones; track step.title; let i = $index) {
+          <li class="card flex gap-4 p-5">
+            <span class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 text-sm font-bold text-brand-700 ring-1 ring-brand-100">{{ i + 1 }}</span>
+            <div>
+              <p class="font-semibold">{{ step.title }}</p>
+              <p class="mt-1 text-sm text-slate-600">{{ step.text }}</p>
+            </div>
+          </li>
+        }
+      </ol>
+    </div>
+
+    <!-- Portfolio CTA -->
+    <aside class="card p-7 shadow-md lg:sticky lg:top-24">
+      <div class="grid size-16 place-items-center rounded-2xl bg-brand-600 text-2xl font-extrabold text-white shadow-sm">AD</div>
+      <p class="mt-5 text-lg font-bold">Andrea De Giorgio</p>
+      <p class="text-sm text-slate-500">Founder & Developer</p>
+      <p class="mt-4 text-sm leading-relaxed text-slate-600">
+        Vuoi conoscere meglio i miei progetti e il mio percorso professionale? Visita il mio portfolio.
+      </p>
+      <a
+        [href]="portfolioUrl"
+        target="_blank"
+        rel="noopener"
+        class="group mt-6 flex items-center justify-between rounded-xl bg-brand-600 px-5 py-4 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md"
+      >
+        <span>
+          <span class="block text-sm font-semibold">Visita il mio portfolio</span>
+          <span class="block text-xs text-brand-100">andreadegiorgio.io</span>
+        </span>
+        <svg class="size-5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg>
+      </a>
+    </aside>
+  </div>
+</section>

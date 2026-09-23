@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* Verde salvia — colore primario del brand */
+  --color-brand-50: #f3f7f4;
+  --color-brand-100: #e3ede6;
+  --color-brand-200: #c7dbcd;
+  --color-brand-300: #9fc0aa;
+  --color-brand-400: #72a083;
+  --color-brand-500: #518466;
+  --color-brand-600: #3e6a51;
+  --color-brand-700: #335543;
+  --color-brand-800: #2b4537;
+  --color-brand-900: #243a2f;
+  --color-brand-950: #122019;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:-translate-y-1 hover:border-slate-300 hover:shadow-md;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold tracking-wide text-brand-700 uppercase;
+  }
+
+  .form-input {
+    @apply block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none;
+  }
+
+  .form-input-error {
+    @apply border-red-300 focus:border-red-500 focus:ring-red-100;
+  }
+}

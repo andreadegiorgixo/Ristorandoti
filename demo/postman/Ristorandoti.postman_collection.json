@@ -1,0 +1,149 @@
+{
+  "info": {
+    "name": "Ristorandoti - Auth",
+    "description": "Test degli endpoint di autenticazione. Eseguire nell'ordine: Register -> Login -> rotta protetta. Il token del login/register viene salvato in automatico nella variabile {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "email", "value": "mario@test.it" },
+    { "key": "password", "value": "password123" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "0 - Health check",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/health"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 e UP', () => {",
+        "    pm.response.to.have.status(200);",
+        "    pm.expect(pm.response.json().status).to.eql('UP');",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "1 - Register",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/register",
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Mario Rossi\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+        "if (pm.response.code === 201) {",
+        "    pm.collectionVariables.set('token', pm.response.json().token);",
+        "}"
+      ] } }]
+    },
+    {
+      "name": "2 - Login",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 e token presente', () => {",
+        "    pm.response.to.have.status(200);",
+        "    pm.expect(pm.response.json().token).to.be.a('string');",
+        "});",
+        "if (pm.response.code === 200) {",
+        "    pm.collectionVariables.set('token', pm.response.json().token);",
+        "}"
+      ] } }]
+    },
+    {
+      "name": "3 - Rotta protetta CON token",
+      "request": { "method": "GET", "url": "{{baseUrl}}/actuator/info" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 (token accettato)', () => pm.response.to.have.status(200));"
+      ] } }]
+    },
+    {
+      "name": "4 - Rotta protetta SENZA token",
+      "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/actuator/info" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 401', () => pm.response.to.have.status(401));"
+      ] } }]
+    },
+    {
+      "name": "Errori",
+      "item": [
+        {
+          "name": "Register email duplicata (409)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Mario Rossi\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));"
+          ] } }]
+        },
+        {
+          "name": "Login password errata (401)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"sbagliata123\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "Register dati non validi (400)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"\",\n  \"email\": \"nonvalida\",\n  \"password\": \"123\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400 con fieldErrors', () => {",
+            "    pm.response.to.have.status(400);",
+            "    pm.expect(pm.response.json().fieldErrors).to.have.keys('name', 'email', 'password');",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "JSON malformato (400)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{ \"email\": \"mario@test.it\", " }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+          ] } }]
+        },
+        {
+          "name": "Metodo non supportato (405)",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/api/auth/login" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 405', () => pm.response.to.have.status(405));"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}

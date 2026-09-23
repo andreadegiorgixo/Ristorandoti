@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Ristorandoti (Spring Boot)",
+            "request": "launch",
+            "mainClass": "com.ristorandoti.application.RistorandotiApplication",
+            "projectName": "demo",
+            "cwd": "${workspaceFolder}/demo"
+        }
+    ]
+}
