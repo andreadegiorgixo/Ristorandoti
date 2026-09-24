@@ -1,5 +1,7 @@
 package com.ristorandoti.application.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ristorandoti.application.dto.AziendaAutorizzazioneDto;
 import com.ristorandoti.application.dto.AziendaDto;
+import com.ristorandoti.application.dto.AziendaPersonaDto;
 import com.ristorandoti.application.dto.AziendaRequestDto;
 import com.ristorandoti.application.dto.PageResponseDto;
 import com.ristorandoti.application.security.JwtService;
@@ -56,8 +60,8 @@ public class AziendaController {
      * @return {@code 200 OK} con l'azienda, {@code 404} se non esiste
      */
     @GetMapping("/{id}")
-    public ResponseEntity<AziendaDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(aziendaService.getById(id));
+    public ResponseEntity<AziendaDto> getById(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
+        return ResponseEntity.ok(aziendaService.getById(id, JwtService.extractUserId(jwt)));
     }
 
     /**
@@ -113,6 +117,61 @@ public class AziendaController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id) {
         aziendaService.delete(id, JwtService.extractUserId(jwt));
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * @param id id dell'azienda
+     * @return {@code 200 OK} con una pagina delle persone che lavorano attualmente nell'azienda,
+     *         {@code 404} se l'azienda non esiste
+     */
+    @GetMapping("/{id}/persone")
+    public ResponseEntity<PageResponseDto<AziendaPersonaDto>> getPersone(@PathVariable Long id,
+                                                                          @RequestParam(defaultValue = "0") int page,
+                                                                          @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size) {
+        return ResponseEntity.ok(aziendaService.getPersone(id, page, size));
+    }
+
+    /**
+     * @param id id dell'azienda
+     * @return {@code 200 OK} con l'elenco delle persone autorizzate a gestire la pagina aziendale
+     *         (proprietario escluso), {@code 403} se l'utente autenticato non è il proprietario,
+     *         {@code 404} se l'azienda non esiste
+     */
+    @GetMapping("/{id}/autorizzazioni")
+    public ResponseEntity<List<AziendaAutorizzazioneDto>> getAutorizzazioni(@AuthenticationPrincipal Jwt jwt,
+                                                                             @PathVariable Long id) {
+        return ResponseEntity.ok(aziendaService.getAutorizzati(id, JwtService.extractUserId(jwt)));
+    }
+
+    /**
+     * Autorizza un utente a gestire la pagina aziendale (pubblicare post, inserire offerte di
+     * lavoro). Idempotente. Solo il proprietario può farlo.
+     *
+     * @param id     id dell'azienda
+     * @param userId utente da autorizzare
+     * @return {@code 200 OK} con la persona autorizzata, {@code 403} se l'utente autenticato non
+     *         è il proprietario, {@code 404} se l'azienda o l'utente da autorizzare non esistono
+     */
+    @PostMapping("/{id}/autorizzazioni/{userId}")
+    public ResponseEntity<AziendaAutorizzazioneDto> autorizza(@AuthenticationPrincipal Jwt jwt,
+                                                                @PathVariable Long id, @PathVariable Long userId) {
+        return ResponseEntity.ok(aziendaService.autorizza(id, JwtService.extractUserId(jwt), userId));
+    }
+
+    /**
+     * Revoca l'autorizzazione di un utente a gestire la pagina aziendale. Idempotente. Solo il
+     * proprietario può farlo.
+     *
+     * @param id     id dell'azienda
+     * @param userId utente da revocare
+     * @return {@code 204 No Content}, {@code 403} se l'utente autenticato non è il proprietario,
+     *         {@code 404} se l'azienda non esiste
+     */
+    @DeleteMapping("/{id}/autorizzazioni/{userId}")
+    public ResponseEntity<Void> revoca(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id,
+                                        @PathVariable Long userId) {
+        aziendaService.revoca(id, JwtService.extractUserId(jwt), userId);
         return ResponseEntity.noContent().build();
     }
 }

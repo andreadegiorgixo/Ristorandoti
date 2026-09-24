@@ -63,9 +63,24 @@ export const routes: Routes = [
   },
   {
     path: 'azienda/:aziendaId',
-    title: 'Azienda — Ristorandoti',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/azienda-profile/azienda-profile').then((m) => m.AziendaProfile),
+    children: [
+      {
+        path: '',
+        title: 'Azienda — Ristorandoti',
+        loadComponent: () => import('./pages/azienda-profile/azienda-profile').then((m) => m.AziendaProfile),
+      },
+      {
+        path: 'post',
+        title: 'Post — Ristorandoti',
+        loadComponent: () => import('./pages/azienda-posts/azienda-posts').then((m) => m.AziendaPosts),
+      },
+      {
+        path: 'persone',
+        title: 'Persone — Ristorandoti',
+        loadComponent: () => import('./pages/azienda-persone/azienda-persone').then((m) => m.AziendaPersone),
+      },
+    ],
   },
   {
     path: '**',

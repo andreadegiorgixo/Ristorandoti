@@ -39,7 +39,7 @@ export class AziendaCard {
     this.load();
   }
 
-  protected onCreated(azienda: Azienda): void {
+  protected onSaved(azienda: Azienda): void {
     this.formOpen.set(false);
     this.toast.success(`"${azienda.nome}" creata!`);
     this.router.navigate(['/azienda', azienda.id]);

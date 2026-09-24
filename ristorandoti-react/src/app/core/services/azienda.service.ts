@@ -4,7 +4,7 @@ import { Observable, catchError, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { toApiError } from '../http/api-error';
-import { Azienda, AziendaRequest } from '../models/azienda.models';
+import { Azienda, AziendaPersona, AziendaRequest } from '../models/azienda.models';
 import { Page } from '../models/post.models';
 
 @Injectable({ providedIn: 'root' })
@@ -20,6 +20,11 @@ export class AziendaService {
     return this.http.get<Azienda>(`${this.baseUrl}/${id}`).pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
+  /** Aggiorna un'azienda esistente. Il backend rifiuta con 403 chi non è il proprietario. */
+  update(id: number, payload: AziendaRequest): Observable<Azienda> {
+    return this.http.put<Azienda>(`${this.baseUrl}/${id}`, payload).pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
   /** Aziende di un utente, dalla più recente. */
   getByUser(userId: number, page: number, size = 20): Observable<Page<Azienda>> {
     const params = new HttpParams().set('page', page).set('size', size);
@@ -33,6 +38,14 @@ export class AziendaService {
     const params = new HttpParams().set('q', query).set('page', 0).set('size', size);
     return this.http
       .get<Page<Azienda>>(`${this.baseUrl}/ricerca`, { params })
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
+  /** Persone che lavorano attualmente nell'azienda, dalla più recente. */
+  getPersone(aziendaId: number, page: number, size = 20): Observable<Page<AziendaPersona>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http
+      .get<Page<AziendaPersona>>(`${this.baseUrl}/${aziendaId}/persone`, { params })
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 }

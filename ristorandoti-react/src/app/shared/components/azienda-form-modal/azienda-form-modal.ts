@@ -1,9 +1,9 @@
-import { Component, HostListener, inject, output, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { ApiError } from '../../../core/http/api-error';
-import { Azienda, FASCE_PREZZO, FasciaPrezzo, TIPI_AZIENDA, TipoAzienda } from '../../../core/models/azienda.models';
+import { Azienda, AziendaRequest, FASCE_PREZZO, FasciaPrezzo, TIPI_AZIENDA, TipoAzienda } from '../../../core/models/azienda.models';
 import { AziendaService } from '../../../core/services/azienda.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { IMAGE_ACCEPT, UploadService } from '../../../core/services/upload.service';
@@ -14,7 +14,7 @@ const MAX_SERVIZI = 15;
 
 type ImageField = 'fotoProfiloUrl' | 'bannerUrl';
 
-/** Finestra modale con il form per creare un'azienda: dati, logo, banner, fascia di prezzo e servizi. */
+/** Finestra modale con il form per creare o modificare un'azienda: dati, logo, banner, fascia di prezzo e servizi. */
 @Component({
   selector: 'app-azienda-form-modal',
   imports: [ReactiveFormsModule, FormsModule],
@@ -25,7 +25,11 @@ export class AziendaFormModal {
   private readonly uploadService = inject(UploadService);
   private readonly toast = inject(ToastService);
 
-  readonly created = output<Azienda>();
+  /** Azienda da modificare; assente in creazione. */
+  readonly azienda = input<Azienda | null>(null);
+  protected readonly isEdit = computed(() => !!this.azienda());
+
+  readonly saved = output<Azienda>();
   readonly closed = output<void>();
 
   protected readonly tipi = TIPI_AZIENDA;
@@ -56,6 +60,15 @@ export class AziendaFormModal {
   });
 
   protected readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  constructor() {
+    effect(() => {
+      const existing = this.azienda();
+      untracked(() => {
+        if (existing) this.patchForm(existing);
+      });
+    });
+  }
 
   @HostListener('document:keydown.escape')
   protected close(): void {
@@ -125,32 +138,52 @@ export class AziendaFormModal {
     this.error.set(null);
 
     const v = this.form.getRawValue();
-    this.aziendaService
-      .create({
-        nome: v.nome.trim(),
-        tipo: v.tipo!,
-        citta: v.citta.trim() || undefined,
-        indirizzo: v.indirizzo.trim() || undefined,
-        telefono: v.telefono.trim() || undefined,
-        email: v.email.trim() || undefined,
-        sitoWebUrl: v.sitoWebUrl.trim() || undefined,
-        descrizione: v.descrizione.trim() || undefined,
-        fotoProfiloUrl: v.fotoProfiloUrl,
-        bannerUrl: v.bannerUrl,
-        fasciaPrezzo: v.fasciaPrezzo!,
-        servizi: this.servizi(),
-      })
-      .subscribe({
-        next: (azienda) => {
-          this.saving.set(false);
-          this.created.emit(azienda);
-        },
-        error: (err: ApiError) => {
-          this.saving.set(false);
-          this.error.set(err);
-          this.applyServerErrors(err.fieldErrors);
-        },
-      });
+    const payload: AziendaRequest = {
+      nome: v.nome.trim(),
+      tipo: v.tipo!,
+      citta: v.citta.trim() || undefined,
+      indirizzo: v.indirizzo.trim() || undefined,
+      telefono: v.telefono.trim() || undefined,
+      email: v.email.trim() || undefined,
+      sitoWebUrl: v.sitoWebUrl.trim() || undefined,
+      descrizione: v.descrizione.trim() || undefined,
+      fotoProfiloUrl: v.fotoProfiloUrl,
+      bannerUrl: v.bannerUrl,
+      fasciaPrezzo: v.fasciaPrezzo!,
+      servizi: this.servizi(),
+    };
+
+    const existing = this.azienda();
+    const request = existing ? this.aziendaService.update(existing.id, payload) : this.aziendaService.create(payload);
+
+    request.subscribe({
+      next: (azienda) => {
+        this.saving.set(false);
+        this.saved.emit(azienda);
+      },
+      error: (err: ApiError) => {
+        this.saving.set(false);
+        this.error.set(err);
+        this.applyServerErrors(err.fieldErrors);
+      },
+    });
+  }
+
+  private patchForm(a: Azienda): void {
+    this.form.patchValue({
+      nome: a.nome,
+      tipo: a.tipo,
+      citta: a.citta ?? '',
+      indirizzo: a.indirizzo ?? '',
+      telefono: a.telefono ?? '',
+      email: a.email ?? '',
+      sitoWebUrl: a.sitoWebUrl ?? '',
+      descrizione: a.descrizione ?? '',
+      fotoProfiloUrl: a.fotoProfiloUrl ?? '',
+      bannerUrl: a.bannerUrl ?? '',
+      fasciaPrezzo: a.fasciaPrezzo,
+    });
+    this.servizi.set([...a.servizi]);
   }
 
   private applyServerErrors(fieldErrors?: Record<string, string>): void {

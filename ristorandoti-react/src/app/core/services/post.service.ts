@@ -24,8 +24,22 @@ export class PostService {
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
+  /** Post pubblicati come pagina aziendale, dal più recente. */
+  getByAzienda(aziendaId: number, page: number, size = 10): Observable<Page<Post>> {
+    return this.http
+      .get<Page<Post>>(`${this.baseUrl}/azienda/${aziendaId}`, { params: pageParams(page, size) })
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
   create(payload: CreatePostRequest): Observable<Post> {
     return this.http.post<Post>(this.baseUrl, payload).pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
+  /** Pubblica un post come pagina aziendale. Solo proprietario o persone autorizzate. */
+  createForAzienda(aziendaId: number, payload: CreatePostRequest): Observable<Post> {
+    return this.http
+      .post<Post>(`${this.baseUrl}/azienda/${aziendaId}`, payload)
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
   like(postId: number): Observable<Post> {

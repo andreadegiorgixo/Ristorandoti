@@ -16,12 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ristorandoti.application.dto.CreatePostRequestDto;
 import com.ristorandoti.application.dto.PageResponseDto;
 import com.ristorandoti.application.dto.PostDto;
+import com.ristorandoti.application.entity.Azienda;
 import com.ristorandoti.application.entity.Post;
 import com.ristorandoti.application.entity.PostLike;
 import com.ristorandoti.application.entity.Profile;
 import com.ristorandoti.application.entity.User;
 import com.ristorandoti.application.exception.ResourceNotFoundException;
 import com.ristorandoti.application.mapper.PostMapper;
+import com.ristorandoti.application.repository.AziendaRepository;
 import com.ristorandoti.application.repository.PostLikeRepository;
 import com.ristorandoti.application.repository.PostRepository;
 import com.ristorandoti.application.repository.ProfileRepository;
@@ -31,7 +33,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Logica di business dei post: feed della community, post di un utente, pubblicazione e like.
+ * Logica di business dei post: feed della community, post di un utente, post di una pagina
+ * aziendale, pubblicazione e like.
+ *
+ * <p>Un post può essere personale (feed e profilo dell'autore) oppure pubblicato come pagina
+ * aziendale ({@link Post#getAzienda()} valorizzato): i due mondi non si mescolano, vedi
+ * {@link PostRepository}.</p>
  *
  * <p>Per trasformare una pagina di post in DTO servono solo tre query aggiuntive in totale
  * (profili degli autori, conteggio like, like dell'utente corrente), indipendentemente dal
@@ -52,17 +59,19 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
+    private final AziendaRepository aziendaRepository;
+    private final AziendaService aziendaService;
     private final PostMapper postMapper;
 
     /**
      * @param currentUserId utente che richiede il feed (per {@code likedByMe})
      * @param page          indice della pagina (da 0)
      * @param size          dimensione della pagina (limitata a {@value #MAX_PAGE_SIZE})
-     * @return una pagina del feed globale, dal post più recente
+     * @return una pagina del feed globale (solo post personali), dal post più recente
      */
     @Transactional(readOnly = true)
     public PageResponseDto<PostDto> getFeed(Long currentUserId, int page, int size) {
-        Page<Post> posts = postRepository.findAll(pageRequest(page, size));
+        Page<Post> posts = postRepository.findByAziendaIdIsNull(pageRequest(page, size));
         return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
     }
 
@@ -71,7 +80,7 @@ public class PostService {
      * @param currentUserId utente che fa la richiesta (per {@code likedByMe})
      * @param page          indice della pagina (da 0)
      * @param size          dimensione della pagina
-     * @return una pagina dei post dell'autore, dal più recente
+     * @return una pagina dei post personali dell'autore, dal più recente
      * @throws ResourceNotFoundException se l'utente non esiste
      */
     @Transactional(readOnly = true)
@@ -79,7 +88,24 @@ public class PostService {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("Utente " + userId + " non trovato");
         }
-        Page<Post> posts = postRepository.findByAutoreId(userId, pageRequest(page, size));
+        Page<Post> posts = postRepository.findByAutoreIdAndAziendaIdIsNull(userId, pageRequest(page, size));
+        return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
+    }
+
+    /**
+     * @param aziendaId     azienda di cui leggere i post pubblicati come pagina
+     * @param currentUserId utente che fa la richiesta (per {@code likedByMe})
+     * @param page          indice della pagina (da 0)
+     * @param size          dimensione della pagina
+     * @return una pagina dei post dell'azienda, dal più recente
+     * @throws ResourceNotFoundException se l'azienda non esiste
+     */
+    @Transactional(readOnly = true)
+    public PageResponseDto<PostDto> getPostsByAzienda(Long aziendaId, Long currentUserId, int page, int size) {
+        if (!aziendaRepository.existsById(aziendaId)) {
+            throw new ResourceNotFoundException("Azienda " + aziendaId + " non trovata");
+        }
+        Page<Post> posts = postRepository.findByAziendaId(aziendaId, pageRequest(page, size));
         return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
     }
 
@@ -97,6 +123,34 @@ public class PostService {
 
         Post saved = postRepository.save(postMapper.toEntity(request, autore));
         log.debug("Post {} pubblicato dall'utente {}", saved.getId(), userId);
+        return toDto(saved, userId);
+    }
+
+    /**
+     * Pubblica un nuovo post come pagina aziendale. Solo il proprietario o una persona
+     * autorizzata possono farlo (vedi {@link AziendaService#ensureManageable}). L'autore
+     * resta l'utente che pubblica, per tracciabilità; il post compare nella home dell'azienda,
+     * non nel feed personale dell'autore.
+     *
+     * @param aziendaId azienda per cui pubblicare
+     * @param userId    utente autenticato (dal JWT)
+     * @param request   testo e/o foto, già validati
+     * @return il post creato
+     * @throws ResourceNotFoundException se l'azienda non esiste
+     * @throws org.springframework.security.access.AccessDeniedException se l'utente non è
+     *         proprietario né autorizzato
+     */
+    @Transactional
+    public PostDto createAziendaPost(Long aziendaId, Long userId, CreatePostRequestDto request) {
+        aziendaService.ensureManageable(aziendaId, userId);
+
+        Azienda azienda = aziendaRepository.getReferenceById(aziendaId);
+        User autore = userRepository.getReferenceById(userId);
+        Post post = postMapper.toEntity(request, autore);
+        post.setAzienda(azienda);
+
+        Post saved = postRepository.save(post);
+        log.debug("Post {} pubblicato per l'azienda {} dall'utente {}", saved.getId(), aziendaId, userId);
         return toDto(saved, userId);
     }
 

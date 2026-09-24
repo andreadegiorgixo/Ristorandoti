@@ -44,6 +44,21 @@ export interface Azienda {
   servizi: string[];
   /** Istante ISO-8601 UTC */
   dataCreazione: string;
+  /** Numero di persone che seguono la pagina aziendale. */
+  followersCount: number;
+  /** {@code true} se l'utente autenticato segue questa pagina. */
+  followedByMe: boolean;
+  /** {@code true} se l'utente autenticato è proprietario o persona autorizzata: può pubblicare post e offerte. */
+  gestibileDaMe: boolean;
+}
+
+/** Persona restituita da {@code GET /api/aziende/{id}/persone} (AziendaPersonaDto). */
+export interface AziendaPersona {
+  userId: number;
+  name: string;
+  profilePictureUrl: string | null;
+  /** Ruolo ricoperto in azienda, es. "Sous Chef". */
+  ruolo: string;
 }
 
 /** Body di {@code POST/PUT /api/aziende} (AziendaRequestDto). */

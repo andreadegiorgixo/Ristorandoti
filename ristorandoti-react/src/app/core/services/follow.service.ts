@@ -22,4 +22,18 @@ export class FollowService {
       .delete<FollowStatus>(`${this.baseUrl}/${userId}`)
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
+
+  /** Segue una pagina aziendale. */
+  followAzienda(aziendaId: number): Observable<FollowStatus> {
+    return this.http
+      .post<FollowStatus>(`${environment.apiUrl}/aziende/${aziendaId}/follow`, null)
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
+  /** Smette di seguire una pagina aziendale. */
+  unfollowAzienda(aziendaId: number): Observable<FollowStatus> {
+    return this.http
+      .delete<FollowStatus>(`${environment.apiUrl}/aziende/${aziendaId}/follow`)
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
 }

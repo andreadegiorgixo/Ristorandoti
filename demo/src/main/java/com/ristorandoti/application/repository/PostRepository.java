@@ -12,22 +12,33 @@ import com.ristorandoti.application.entity.Post;
  *
  * <p>L'{@link EntityGraph} carica l'autore nella stessa query della pagina, evitando una query
  * in più per ogni post (problema N+1). L'ordinamento arriva dal {@link Pageable}.</p>
+ *
+ * <p>Il feed globale e il profilo personale mostrano solo i post personali ({@code azienda IS NULL}):
+ * i post pubblicati come pagina aziendale vivono solo nella home dell'azienda
+ * (vedi {@link #findByAziendaId}).</p>
  */
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     /**
      * @param pageable pagina e ordinamento richiesti
-     * @return una pagina del feed globale
+     * @return una pagina del feed globale (solo post personali)
      */
-    @Override
     @EntityGraph(attributePaths = "autore")
-    Page<Post> findAll(Pageable pageable);
+    Page<Post> findByAziendaIdIsNull(Pageable pageable);
 
     /**
      * @param autoreId id dell'autore
      * @param pageable pagina e ordinamento richiesti
-     * @return una pagina dei post di quell'autore
+     * @return una pagina dei post personali di quell'autore
      */
     @EntityGraph(attributePaths = "autore")
-    Page<Post> findByAutoreId(Long autoreId, Pageable pageable);
+    Page<Post> findByAutoreIdAndAziendaIdIsNull(Long autoreId, Pageable pageable);
+
+    /**
+     * @param aziendaId id dell'azienda
+     * @param pageable  pagina e ordinamento richiesti
+     * @return una pagina dei post pubblicati come pagina di quell'azienda
+     */
+    @EntityGraph(attributePaths = {"autore", "azienda"})
+    Page<Post> findByAziendaId(Long aziendaId, Pageable pageable);
 }

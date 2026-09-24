@@ -131,6 +131,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Operazione non valida su un'offerta di lavoro (es. più di 3 offerte attive per la stessa
+     * azienda) → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da {@code OffertaLavoroService.create}
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(InvalidOffertaLavoroException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidOffertaLavoro(InvalidOffertaLavoroException ex,
+                                                                       HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    /**
      * File oltre {@code spring.servlet.multipart.max-file-size} → {@code 413 Payload Too Large}.
      *
      * @param ex      eccezione lanciata dal parser multipart

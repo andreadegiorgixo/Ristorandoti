@@ -1,8 +1,7 @@
-@let me = profile.me();
-@let name = auth.currentUser()?.name ?? '';
+@let name = displayName();
 <section class="card p-4 sm:p-5" aria-label="Crea un post">
   <div class="flex items-start gap-3">
-    <app-avatar [src]="me?.profilePictureUrl" [name]="name" />
+    <app-avatar [src]="avatarSrc()" [name]="name" />
 
     @if (!expanded()) {
       <button
@@ -10,7 +9,7 @@
         (click)="expand()"
         class="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-left text-sm text-slate-500 transition hover:border-slate-300 hover:bg-slate-100"
       >
-        Cosa vuoi condividere oggi, {{ name.split(' ')[0] }}?
+        {{ azienda() ? 'Condividi una novità come ' + name + '…' : 'Cosa vuoi condividere oggi, ' + name.split(' ')[0] + '?' }}
       </button>
     } @else {
       <form [formGroup]="form" (ngSubmit)="publish()" class="min-w-0 flex-1">

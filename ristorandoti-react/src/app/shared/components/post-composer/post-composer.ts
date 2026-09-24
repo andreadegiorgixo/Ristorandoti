@@ -1,8 +1,9 @@
-import { Component, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { ApiError } from '../../../core/http/api-error';
+import { Azienda } from '../../../core/models/azienda.models';
 import { Post } from '../../../core/models/post.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { PostService } from '../../../core/services/post.service';
@@ -17,6 +18,10 @@ export const MAX_POST_LENGTH = 3000;
 /**
  * Box "Cosa vuoi condividere?" in cima al feed. Resta compatto finché non ci si clicca,
  * poi si espande; Ctrl/⌘ + Invio pubblica.
+ *
+ * <p>Se si valorizza {@link azienda}, pubblica come pagina aziendale invece che a nome
+ * dell'utente autenticato (usato dalla tab LAVORO/HOME del profilo aziendale, solo per chi può
+ * gestirlo: il controllo è comunque applicato anche lato backend).</p>
  */
 @Component({
   selector: 'app-post-composer',
@@ -30,6 +35,9 @@ export class PostComposer {
   private readonly toast = inject(ToastService);
   protected readonly auth = inject(AuthService);
   protected readonly profile = inject(ProfileService);
+
+  /** Azienda per cui pubblicare; assente per un post personale. */
+  readonly azienda = input<Azienda | null>(null);
 
   readonly published = output<Post>();
 
@@ -47,6 +55,10 @@ export class PostComposer {
     /** URL restituito da POST /api/uploads/images dopo aver scelto il file */
     mediaUrl: new FormControl('', { nonNullable: true }),
   });
+
+  /** Foto e nome mostrati nell'intestazione: dell'azienda se si pubblica come pagina, altrimenti i propri. */
+  protected readonly avatarSrc = computed(() => this.azienda()?.fotoProfiloUrl ?? this.profile.me()?.profilePictureUrl);
+  protected readonly displayName = computed(() => this.azienda()?.nome ?? this.auth.currentUser()?.name ?? '');
 
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly length = computed(() => this.value().contenuto?.length ?? 0);
@@ -114,11 +126,11 @@ export class PostComposer {
     if (!this.canPublish()) return;
 
     const { contenuto, mediaUrl } = this.form.getRawValue();
+    const payload = { contenuto: contenuto.trim() || undefined, mediaUrl: mediaUrl || undefined };
+    const azienda = this.azienda();
     this.publishing.set(true);
 
-    this.postService
-      .create({ contenuto: contenuto.trim() || undefined, mediaUrl: mediaUrl || undefined })
-      .subscribe({
+    (azienda ? this.postService.createForAzienda(azienda.id, payload) : this.postService.create(payload)).subscribe({
         next: (post) => {
           this.publishing.set(false);
           this.cancel();

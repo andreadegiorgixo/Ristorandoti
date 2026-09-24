@@ -36,7 +36,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = "autore")
+@ToString(exclude = {"autore", "azienda"})
 public class Post {
 
     @Id
@@ -44,10 +44,19 @@ public class Post {
     @Column(name = "id")
     private Long id;
 
-    /** Utente che ha pubblicato il post. */
+    /** Utente che ha pubblicato il post (sempre una persona, anche per i post di una pagina aziendale). */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "autore_id", nullable = false)
     private User autore;
+
+    /**
+     * Pagina aziendale per cui il post è stato pubblicato; {@code null} per un post personale.
+     * Quando valorizzato, il post appartiene alla home dell'azienda invece che al feed personale
+     * dell'autore (vedi {@link com.ristorandoti.application.service.PostService}).
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "azienda_id")
+    private Azienda azienda;
 
     /** Testo del post; può mancare se c'è una foto. */
     @Column(name = "contenuto", length = 3000)

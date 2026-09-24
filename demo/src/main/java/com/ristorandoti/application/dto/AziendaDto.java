@@ -56,4 +56,16 @@ public class AziendaDto {
     private List<String> servizi;
 
     private Instant dataCreazione;
+
+    /** Numero di persone che seguono la pagina aziendale. Valorizzato solo da {@code GET /{id}}. */
+    private long followersCount;
+
+    /** {@code true} se l'utente che fa la richiesta segue questa pagina. Valorizzato solo da {@code GET /{id}}. */
+    private boolean followedByMe;
+
+    /**
+     * {@code true} se l'utente che fa la richiesta è il proprietario o una persona autorizzata,
+     * quindi può pubblicare post e offerte di lavoro come questa azienda. Valorizzato solo da {@code GET /{id}}.
+     */
+    private boolean gestibileDaMe;
 }

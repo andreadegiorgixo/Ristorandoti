@@ -1,0 +1,61 @@
+@let a = azienda();
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
+  @if (loading() && !a) {
+    <div class="card animate-pulse h-24" aria-hidden="true"></div>
+  } @else if (error(); as err) {
+    <div class="card flex flex-col items-center px-6 py-16 text-center">
+      @if (err.status === 404) {
+        <h1 class="text-xl font-bold">Azienda non trovata</h1>
+        <p class="mt-2 text-sm text-slate-500">Questa azienda non esiste o è stata eliminata.</p>
+        <a routerLink="/feed" class="btn-primary mt-6">Torna al feed</a>
+      } @else {
+        <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+        <button type="button" (click)="retry()" class="btn-secondary mt-4">Riprova</button>
+      }
+    </div>
+  } @else if (a) {
+    <div class="mb-4 flex items-center gap-2 text-sm">
+      <a routerLink="/azienda/{{ a.id }}" class="font-semibold text-brand-700 hover:underline">← {{ a.nome }}</a>
+      <span class="text-slate-400">/</span>
+      <span class="text-slate-500">Post</span>
+    </div>
+
+    <div class="space-y-4">
+      @if (a.gestibileDaMe) {
+        <app-post-composer [azienda]="a" (published)="pager.prepend($event)" />
+      }
+
+      @if (pager.initialLoading()) {
+        <app-post-skeleton />
+        <app-post-skeleton />
+      }
+
+      @for (post of pager.posts(); track post.id) {
+        <app-post-card [post]="post" (postChange)="pager.replace($event)" />
+      }
+
+      @if (pager.empty()) {
+        <div class="card px-6 py-10 text-center text-sm text-slate-500">
+          {{ a.nome }} non ha ancora pubblicato nulla.
+        </div>
+      }
+
+      @if (pager.error(); as err) {
+        <div class="card flex flex-col items-center gap-3 px-6 py-8 text-center" role="alert">
+          <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+          <button type="button" (click)="pager.loadMore()" class="btn-secondary !py-2">Riprova</button>
+        </div>
+      }
+
+      @if (pager.loading() && !pager.initialLoading()) {
+        <app-post-skeleton />
+      }
+
+      @if (!pager.loading() && !pager.last() && !pager.error() && pager.posts().length) {
+        <div appInfiniteScroll (reached)="pager.loadMore()" class="flex justify-center py-2">
+          <button type="button" (click)="pager.loadMore()" class="btn-secondary !py-2">Carica altri post</button>
+        </div>
+      }
+    </div>
+  }
+</div>

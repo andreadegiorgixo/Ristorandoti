@@ -40,17 +40,36 @@
           }
         </div>
 
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-          <h1 class="text-2xl font-extrabold tracking-tight">{{ a.nome }}</h1>
-          <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{{ tipoLabel(a.tipo) }}</span>
-          @if (fascia(); as f) {
-            <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700" [title]="f.label">{{ f.simbolo }}</span>
-          }
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-2xl font-extrabold tracking-tight">{{ a.nome }}</h1>
+            <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{{ tipoLabel(a.tipo) }}</span>
+            @if (fascia(); as f) {
+              <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700" [title]="f.label">{{ f.simbolo }}</span>
+            }
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            @if (isOwner()) {
+              <button type="button" (click)="editOpen.set(true)" class="btn-secondary !px-4 !py-2">Modifica</button>
+            }
+            <button
+              type="button"
+              (click)="toggleFollow()"
+              [disabled]="followPending()"
+              class="!px-4 !py-2 disabled:opacity-60"
+              [class]="a.followedByMe ? 'btn-secondary' : 'btn-primary'"
+            >
+              @if (a.followedByMe) {
+                Segui già
+              } @else {
+                + Segui
+              }
+            </button>
+          </div>
         </div>
 
-        <p class="mt-1 text-sm text-slate-500">
-          Pagina gestita da
-          <a routerLink="/profile/{{ a.proprietarioId }}" class="font-semibold text-brand-700 hover:underline">{{ a.proprietarioName }}</a>
+        <p class="mt-2 text-sm text-slate-500">
+          <span class="font-semibold text-slate-700">{{ a.followersCount }}</span> follower
         </p>
 
         @if (a.descrizione) {
@@ -95,6 +114,123 @@
           </div>
         }
       </div>
+
+      <!-- Tab -->
+      <nav class="flex border-t border-slate-100 px-2" aria-label="Sezioni della pagina aziendale">
+        <button
+          type="button"
+          (click)="tab.set('home')"
+          class="relative px-4 py-3 text-sm font-semibold transition"
+          [class.text-brand-700]="tab() === 'home'"
+          [class.text-slate-500]="tab() !== 'home'"
+          [attr.aria-current]="tab() === 'home'"
+        >
+          Home
+          @if (tab() === 'home') { <span class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600"></span> }
+        </button>
+        <button
+          type="button"
+          (click)="tab.set('lavoro')"
+          class="relative px-4 py-3 text-sm font-semibold transition"
+          [class.text-brand-700]="tab() === 'lavoro'"
+          [class.text-slate-500]="tab() !== 'lavoro'"
+          [attr.aria-current]="tab() === 'lavoro'"
+        >
+          Lavoro
+          @if (offerte().length) {
+            <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{{ offerte().length }}</span>
+          }
+          @if (tab() === 'lavoro') { <span class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600"></span> }
+        </button>
+      </nav>
     </section>
+
+    @if (tab() === 'home') {
+      <!-- Post -->
+      <section class="card mt-4 p-5 sm:p-6" aria-labelledby="post-title">
+        <h2 id="post-title" class="text-lg font-bold">Post</h2>
+
+        @if (ultimoPost(); as post) {
+          <div class="mt-4">
+            <app-post-card [post]="post" (postChange)="onPostChange($event)" />
+          </div>
+          <a routerLink="/azienda/{{ a.id }}/post" class="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline">Mostra tutti i post</a>
+        } @else {
+          <p class="mt-3 text-sm text-slate-500">{{ a.nome }} non ha ancora pubblicato nulla.</p>
+          @if (a.gestibileDaMe) {
+            <a routerLink="/azienda/{{ a.id }}/post" class="mt-2 inline-block text-sm font-semibold text-brand-700 hover:underline">Pubblica il primo post</a>
+          }
+        }
+      </section>
+
+      <!-- Persone -->
+      <section class="card mt-4 p-5 sm:p-6" aria-labelledby="persone-title">
+        <h2 id="persone-title" class="text-lg font-bold">Persone</h2>
+
+        @if (personePreview().length) {
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            @for (p of personePreview(); track p.userId) {
+              <app-persona-card [persona]="p" />
+            }
+          </div>
+          @if (personeTotal() > personePreview().length) {
+            <a routerLink="/azienda/{{ a.id }}/persone" class="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline">Mostra tutte le persone</a>
+          }
+        } @else {
+          <p class="mt-3 text-sm text-slate-500">Nessuna persona ha collegato la propria esperienza a questa pagina, per ora.</p>
+        }
+      </section>
+    } @else {
+      <!-- Offerte di lavoro -->
+      <section class="card mt-4 p-5 sm:p-6" aria-labelledby="lavoro-title">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="lavoro-title" class="text-lg font-bold">Offerte di lavoro</h2>
+          @if (a.gestibileDaMe) {
+            <button
+              type="button"
+              (click)="openOffertaForm()"
+              [disabled]="!puoiCreareOfferta()"
+              [title]="puoiCreareOfferta() ? '' : 'Massimo 3 offerte attive contemporaneamente'"
+              class="text-sm font-semibold text-brand-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+            >
+              + Nuova offerta
+            </button>
+          }
+        </div>
+
+        @if (offerteLoading()) {
+          <div class="mt-4 space-y-3" aria-hidden="true">
+            <div class="h-16 animate-pulse rounded-xl bg-slate-100"></div>
+            <div class="h-16 animate-pulse rounded-xl bg-slate-100"></div>
+          </div>
+        } @else if (offerte().length) {
+          <ul class="mt-4 space-y-3">
+            @for (o of offerte(); track o.id) {
+              <li class="rounded-xl border border-slate-100 p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <p class="font-semibold text-slate-900">{{ o.titolo }}</p>
+                  @if (a.gestibileDaMe) {
+                    <button type="button" (click)="chiudiOfferta(o)" class="shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600">Chiudi</button>
+                  }
+                </div>
+                @if (o.descrizione) {
+                  <p class="mt-1.5 text-sm whitespace-pre-line text-slate-600">{{ o.descrizione }}</p>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="mt-4 text-sm text-slate-500">Al momento non ci sono offerte di lavoro per {{ a.nome }}.</p>
+        }
+      </section>
+    }
+
+    @if (editOpen()) {
+      <app-azienda-form-modal [azienda]="a" (saved)="onSaved($event)" (closed)="editOpen.set(false)" />
+    }
+
+    @if (offertaFormOpen()) {
+      <app-offerta-lavoro-form-modal [aziendaId]="a.id" (saved)="onOffertaSaved($event)" (closed)="offertaFormOpen.set(false)" />
+    }
   }
 </div>

@@ -53,5 +53,5 @@
 </div>
 
 @if (formOpen()) {
-  <app-azienda-form-modal (created)="onCreated($event)" (closed)="formOpen.set(false)" />
+  <app-azienda-form-modal (saved)="onSaved($event)" (closed)="formOpen.set(false)" />
 }

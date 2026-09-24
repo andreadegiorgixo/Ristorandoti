@@ -1,0 +1,8 @@
+@let p = persona();
+<a routerLink="/profile/{{ p.userId }}" class="card flex items-center gap-3 p-3 transition hover:border-brand-200 hover:shadow-sm">
+  <app-avatar [src]="p.profilePictureUrl" [name]="p.name" />
+  <div class="min-w-0 flex-1">
+    <p class="truncate text-sm font-semibold text-slate-900">{{ p.name }}</p>
+    <p class="truncate text-xs text-slate-500">{{ p.ruolo }}</p>
+  </div>
+</a>

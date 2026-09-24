@@ -71,6 +71,34 @@ public class PostController {
     }
 
     /**
+     * @param aziendaId azienda di cui leggere i post pubblicati come pagina
+     * @return {@code 200 OK} con una pagina dei post dell'azienda, {@code 404} se non esiste
+     */
+    @GetMapping("/azienda/{aziendaId}")
+    public ResponseEntity<PageResponseDto<PostDto>> getPostsByAzienda(@AuthenticationPrincipal Jwt jwt,
+                                                                       @PathVariable Long aziendaId,
+                                                                       @RequestParam(defaultValue = "0") int page,
+                                                                       @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size) {
+        return ResponseEntity.ok(postService.getPostsByAzienda(aziendaId, JwtService.extractUserId(jwt), page, size));
+    }
+
+    /**
+     * Pubblica un post come pagina aziendale. Solo il proprietario o una persona autorizzata
+     * possono farlo.
+     *
+     * @param aziendaId azienda per cui pubblicare
+     * @param request   testo e/o URL della foto
+     * @return {@code 201 Created} con il post pubblicato, {@code 403} se l'utente non è
+     *         proprietario né autorizzato, {@code 404} se l'azienda non esiste
+     */
+    @PostMapping("/azienda/{aziendaId}")
+    public ResponseEntity<PostDto> createAziendaPost(@AuthenticationPrincipal Jwt jwt, @PathVariable Long aziendaId,
+                                                      @Valid @RequestBody CreatePostRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(postService.createAziendaPost(aziendaId, JwtService.extractUserId(jwt), request));
+    }
+
+    /**
      * @param postId post a cui mettere like (idempotente)
      * @return {@code 200 OK} con il post aggiornato, {@code 404} se non esiste
      */
