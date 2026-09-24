@@ -4,6 +4,8 @@ export interface Experience {
   azienda: string;
   /** Id dell'azienda registrata collegata; null se nessuna corrispondenza. */
   aziendaId: number | null;
+  /** URL del logo dell'azienda registrata collegata; null se nessuna corrispondenza. */
+  aziendaLogoUrl: string | null;
   ruolo: string;
   dataStart: string;
   /** null = posizione attuale */
@@ -40,7 +42,7 @@ export interface Profile {
   valutazioneMedia: number | null;
 }
 
-export type ExperienceRequest = Omit<Experience, 'id'>;
+export type ExperienceRequest = Omit<Experience, 'id' | 'aziendaLogoUrl'>;
 export type EducationRequest = Omit<Education, 'id'>;
 
 /**

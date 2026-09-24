@@ -28,6 +28,55 @@
       }
 
       <div class="space-y-4">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <span id="azienda-foto-label" class="mb-1.5 block text-sm font-semibold text-slate-700">Foto profilo (logo)*</span>
+            <input #fotoInput id="azienda-foto" type="file" [accept]="imageAccept" (change)="onImageSelected('fotoProfiloUrl', fotoInput)" class="sr-only" aria-labelledby="azienda-foto-label" />
+            <div class="flex flex-wrap items-center gap-2">
+              @if (value().fotoProfiloUrl) {
+                <img [src]="value().fotoProfiloUrl" alt="Anteprima del logo" class="size-11 shrink-0 rounded-lg object-cover ring-1 ring-slate-200" />
+              }
+              <label for="azienda-foto" class="btn-secondary cursor-pointer !py-2 !text-xs" [class.pointer-events-none]="uploading()" [class.opacity-60]="uploading()">
+                @if (uploading() === 'fotoProfiloUrl') {
+                  <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+                  Caricamento…
+                } @else {
+                  {{ value().fotoProfiloUrl ? 'Cambia' : 'Carica' }}
+                }
+              </label>
+              @if (value().fotoProfiloUrl && uploading() !== 'fotoProfiloUrl') {
+                <button type="button" (click)="clearImage('fotoProfiloUrl')" class="text-xs font-semibold text-slate-500 hover:text-red-600">Rimuovi</button>
+              }
+            </div>
+            @if (showError(form.controls.fotoProfiloUrl)) {
+              <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.fotoProfiloUrl) }}</p>
+            }
+          </div>
+          <div>
+            <span id="azienda-banner-label" class="mb-1.5 block text-sm font-semibold text-slate-700">Foto banner*</span>
+            <input #bannerInput id="azienda-banner" type="file" [accept]="imageAccept" (change)="onImageSelected('bannerUrl', bannerInput)" class="sr-only" aria-labelledby="azienda-banner-label" />
+            <div class="flex flex-wrap items-center gap-2">
+              @if (value().bannerUrl) {
+                <img [src]="value().bannerUrl" alt="Anteprima del banner" class="h-11 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200" />
+              }
+              <label for="azienda-banner" class="btn-secondary cursor-pointer !py-2 !text-xs" [class.pointer-events-none]="uploading()" [class.opacity-60]="uploading()">
+                @if (uploading() === 'bannerUrl') {
+                  <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+                  Caricamento…
+                } @else {
+                  {{ value().bannerUrl ? 'Cambia' : 'Carica' }}
+                }
+              </label>
+              @if (value().bannerUrl && uploading() !== 'bannerUrl') {
+                <button type="button" (click)="clearImage('bannerUrl')" class="text-xs font-semibold text-slate-500 hover:text-red-600">Rimuovi</button>
+              }
+            </div>
+            @if (showError(form.controls.bannerUrl)) {
+              <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.bannerUrl) }}</p>
+            }
+          </div>
+        </div>
+
         <div>
           <label for="azienda-nome" class="mb-1.5 block text-sm font-semibold text-slate-700">Nome*</label>
           <input id="azienda-nome" type="text" formControlName="nome" placeholder="Es. Trattoria da Mario" class="form-input"
@@ -47,6 +96,46 @@
           </select>
           @if (showError(form.controls.tipo)) {
             <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.tipo) }}</p>
+          }
+        </div>
+
+        <div>
+          <label for="azienda-fascia" class="mb-1.5 block text-sm font-semibold text-slate-700">Fascia di prezzo*</label>
+          <select id="azienda-fascia" formControlName="fasciaPrezzo" class="form-input" [class.form-input-error]="showError(form.controls.fasciaPrezzo)" [attr.aria-invalid]="showError(form.controls.fasciaPrezzo)">
+            <option [ngValue]="null" disabled>Seleziona…</option>
+            @for (f of fasce; track f.value) {
+              <option [ngValue]="f.value">{{ f.simbolo }} — {{ f.label }}</option>
+            }
+          </select>
+          @if (showError(form.controls.fasciaPrezzo)) {
+            <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.fasciaPrezzo) }}</p>
+          }
+        </div>
+
+        <div>
+          <label for="azienda-servizio" class="mb-1.5 block text-sm font-semibold text-slate-700">Servizi</label>
+          <div class="flex gap-2">
+            <input
+              id="azienda-servizio"
+              type="text"
+              [(ngModel)]="servizioInput"
+              [ngModelOptions]="{ standalone: true }"
+              (keydown.enter)="$event.preventDefault(); addServizio()"
+              [maxlength]="limits.servizio"
+              placeholder="Es. Parcheggio, Wifi gratuito…"
+              class="form-input"
+            />
+            <button type="button" (click)="addServizio()" [disabled]="servizi().length >= maxServizi" class="btn-secondary shrink-0 !py-2.5">Aggiungi</button>
+          </div>
+          @if (servizi().length) {
+            <ul class="mt-2 flex flex-wrap gap-2">
+              @for (s of servizi(); track s; let i = $index) {
+                <li class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                  {{ s }}
+                  <button type="button" (click)="removeServizio(i)" [attr.aria-label]="'Rimuovi ' + s" class="text-slate-400 hover:text-red-600">✕</button>
+                </li>
+              }
+            </ul>
           }
         </div>
 
@@ -108,8 +197,8 @@
       </div>
 
       <div class="mt-6 flex justify-end gap-3">
-        <button type="button" (click)="close()" [disabled]="saving()" class="btn-secondary !py-2.5">Annulla</button>
-        <button type="submit" [disabled]="saving()" class="btn-primary !py-2.5">
+        <button type="button" (click)="close()" [disabled]="saving() || !!uploading()" class="btn-secondary !py-2.5">Annulla</button>
+        <button type="submit" [disabled]="saving() || !!uploading()" class="btn-primary !py-2.5">
           @if (saving()) {
             <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
             Creazione…

@@ -1,7 +1,10 @@
 package com.ristorandoti.application.dto;
 
+import java.util.List;
+
 import org.hibernate.validator.constraints.URL;
 
+import com.ristorandoti.application.entity.FasciaPrezzo;
 import com.ristorandoti.application.entity.TipoAzienda;
 
 import jakarta.validation.constraints.Email;
@@ -55,4 +58,19 @@ public class AziendaRequestDto {
     @URL(message = "URL del sito web non valido")
     @Size(max = 1000, message = "L'URL del sito web non può superare 1000 caratteri")
     private String sitoWebUrl;
+
+    @NotBlank(message = "La foto profilo è obbligatoria")
+    @Size(max = 1000, message = "L'URL della foto profilo non può superare 1000 caratteri")
+    private String fotoProfiloUrl;
+
+    @NotBlank(message = "Il banner è obbligatorio")
+    @Size(max = 1000, message = "L'URL del banner non può superare 1000 caratteri")
+    private String bannerUrl;
+
+    @NotNull(message = "La fascia di prezzo è obbligatoria")
+    private FasciaPrezzo fasciaPrezzo;
+
+    @Size(max = 15, message = "Puoi aggiungere al massimo 15 servizi")
+    private List<@NotBlank(message = "Il nome del servizio non può essere vuoto")
+                 @Size(max = 100, message = "Il nome del servizio non può superare 100 caratteri") String> servizi;
 }

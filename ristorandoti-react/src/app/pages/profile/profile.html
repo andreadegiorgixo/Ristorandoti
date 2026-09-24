@@ -129,6 +129,11 @@
                 <span class="font-normal text-slate-500">({{ p.recensioniCount }})</span>
               }
             </button>
+            @if (eligibility()?.canReview) {
+              <button type="button" (click)="openWriteReview()" class="text-sm font-semibold text-brand-700 hover:underline">
+                {{ eligibility()?.alreadyReviewed ? 'Modifica la tua recensione' : 'Scrivi una recensione' }}
+              </button>
+            }
             @if (isOwn() && p.esperienze.length) {
               <a routerLink="/profile/edit" fragment="esperienze" class="text-sm font-semibold text-brand-700 hover:underline">Modifica</a>
             }
@@ -139,15 +144,21 @@
           <ol class="mt-4 space-y-5">
             @for (exp of p.esperienze; track exp.id) {
               <li class="flex gap-4">
-                <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
-                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
-                </span>
+                @if (exp.aziendaLogoUrl) {
+                  <img [src]="exp.aziendaLogoUrl" alt="Logo di {{ exp.azienda }}" class="size-11 shrink-0 rounded-xl object-cover ring-1 ring-slate-100" />
+                } @else {
+                  <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
+                  </span>
+                }
                 <div class="min-w-0 flex-1 border-b border-slate-100 pb-5 last:border-0">
                   <p class="font-semibold">{{ exp.ruolo }}</p>
                   <p class="flex items-center gap-1.5 text-sm text-slate-700">
-                    {{ exp.azienda }}
                     @if (exp.aziendaId) {
+                      <a routerLink="/azienda/{{ exp.aziendaId }}" class="font-medium text-brand-700 hover:underline">{{ exp.azienda }}</a>
                       <svg class="size-3.5 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" title="Azienda registrata"><path d="M20 6 9 17l-5-5" /></svg>
+                    } @else {
+                      {{ exp.azienda }}
                     }
                   </p>
                   <p class="mt-0.5 text-xs text-slate-500">{{ formatPeriod(exp.dataStart, exp.dataEnd) }}</p>
@@ -244,6 +255,17 @@
 
     @if (reviewsOpen()) {
       <app-review-list-modal [userId]="p.userId" [userName]="p.name" (closed)="closeReviews()" />
+    }
+
+    @if (writeReviewOpen()) {
+      <app-write-review-modal
+        [userId]="p.userId"
+        [userName]="p.name"
+        [initialReview]="eligibility()?.myReview ?? null"
+        (saved)="onReviewSaved($event)"
+        (deleted)="onReviewDeleted()"
+        (closed)="closeWriteReview()"
+      />
     }
   }
 </div>

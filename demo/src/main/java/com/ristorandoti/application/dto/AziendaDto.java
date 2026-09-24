@@ -1,7 +1,9 @@
 package com.ristorandoti.application.dto;
 
 import java.time.Instant;
+import java.util.List;
 
+import com.ristorandoti.application.entity.FasciaPrezzo;
 import com.ristorandoti.application.entity.TipoAzienda;
 
 import lombok.AllArgsConstructor;
@@ -42,6 +44,16 @@ public class AziendaDto {
     private String email;
 
     private String sitoWebUrl;
+
+    /** URL del logo aziendale (quadrato). */
+    private String fotoProfiloUrl;
+
+    /** URL del banner (rettangolare). */
+    private String bannerUrl;
+
+    private FasciaPrezzo fasciaPrezzo;
+
+    private List<String> servizi;
 
     private Instant dataCreazione;
 }

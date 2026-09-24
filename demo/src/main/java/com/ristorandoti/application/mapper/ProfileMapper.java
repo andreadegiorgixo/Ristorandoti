@@ -73,6 +73,7 @@ public class ProfileMapper {
                 .id(experience.getId())
                 .azienda(experience.getAzienda())
                 .aziendaId(aziendaCollegata != null ? aziendaCollegata.getId() : null)
+                .aziendaLogoUrl(aziendaCollegata != null ? aziendaCollegata.getFotoProfiloUrl() : null)
                 .ruolo(experience.getRuolo())
                 .dataStart(experience.getDataStart())
                 .dataEnd(experience.getDataEnd())

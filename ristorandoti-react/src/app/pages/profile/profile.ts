@@ -4,16 +4,19 @@ import { RouterLink } from '@angular/router';
 
 import { ApiError } from '../../core/http/api-error';
 import { Profile as ProfileModel } from '../../core/models/profile.models';
+import { Review, ReviewEligibility } from '../../core/models/review.models';
 import { AuthService } from '../../core/services/auth.service';
 import { FollowService } from '../../core/services/follow.service';
 import { PostService } from '../../core/services/post.service';
 import { ProfileService } from '../../core/services/profile.service';
+import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
 import { PostCard } from '../../shared/components/post-card/post-card';
 import { PostSkeleton } from '../../shared/components/post-card/post-skeleton';
 import { PostComposer } from '../../shared/components/post-composer/post-composer';
 import { ReviewListModal } from '../../shared/components/review-list-modal/review-list-modal';
+import { WriteReviewModal } from '../../shared/components/write-review-modal/write-review-modal';
 import { InfiniteScrollDirective } from '../../shared/directives/infinite-scroll.directive';
 import { formatPeriod } from '../../shared/utils/dates';
 import { PostPager } from '../../shared/utils/post-pager';
@@ -26,7 +29,7 @@ type Tab = 'percorso' | 'post';
  */
 @Component({
   selector: 'app-profile',
-  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, ReviewListModal, InfiniteScrollDirective],
+  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, ReviewListModal, WriteReviewModal, InfiniteScrollDirective],
   templateUrl: './profile.html',
 })
 export class Profile implements OnDestroy {
@@ -34,6 +37,7 @@ export class Profile implements OnDestroy {
   private readonly profileService = inject(ProfileService);
   private readonly followService = inject(FollowService);
   private readonly postService = inject(PostService);
+  private readonly reviewService = inject(ReviewService);
   private readonly toast = inject(ToastService);
   private readonly title = inject(Title);
 
@@ -51,6 +55,8 @@ export class Profile implements OnDestroy {
   protected readonly tab = signal<Tab>('percorso');
   protected readonly followPending = signal(false);
   protected readonly reviewsOpen = signal(false);
+  protected readonly eligibility = signal<ReviewEligibility | null>(null);
+  protected readonly writeReviewOpen = signal(false);
 
   protected readonly pager = new PostPager((page) => this.postService.getByUser(this.targetId(), page));
   protected readonly formatPeriod = formatPeriod;
@@ -77,12 +83,15 @@ export class Profile implements OnDestroy {
     this.otherProfile.set(null);
     this.tab.set('percorso');
     this.reviewsOpen.set(false);
+    this.eligibility.set(null);
+    this.writeReviewOpen.set(false);
     this.pager.reset();
 
-    const request = this.isOwn() ? this.profileService.getMe() : this.profileService.getByUserId(id);
+    const isOwn = this.isOwn();
+    const request = isOwn ? this.profileService.getMe() : this.profileService.getByUserId(id);
     request.subscribe({
       next: (profile) => {
-        if (!this.isOwn()) this.otherProfile.set(profile);
+        if (!isOwn) this.otherProfile.set(profile);
         this.loading.set(false);
       },
       error: (err: ApiError) => {
@@ -90,6 +99,14 @@ export class Profile implements OnDestroy {
         this.loading.set(false);
       },
     });
+
+    if (!isOwn) {
+      this.reviewService.getEligibility(id).subscribe({
+        next: (result) => this.eligibility.set(result),
+        // È solo un aiuto per la UI: se la chiamata fallisce si nasconde semplicemente il pulsante.
+        error: () => this.eligibility.set(null),
+      });
+    }
   }
 
   protected retry(): void {
@@ -102,6 +119,29 @@ export class Profile implements OnDestroy {
 
   protected closeReviews(): void {
     this.reviewsOpen.set(false);
+  }
+
+  protected openWriteReview(): void {
+    this.writeReviewOpen.set(true);
+  }
+
+  protected closeWriteReview(): void {
+    this.writeReviewOpen.set(false);
+  }
+
+  protected onReviewSaved(review: Review): void {
+    const wasAlreadyReviewed = this.eligibility()?.alreadyReviewed ?? false;
+    this.eligibility.update((e) => (e ? { ...e, alreadyReviewed: true, myReview: review } : e));
+    if (!wasAlreadyReviewed) {
+      this.otherProfile.update((p) => (p ? { ...p, recensioniCount: p.recensioniCount + 1 } : p));
+    }
+    this.writeReviewOpen.set(false);
+  }
+
+  protected onReviewDeleted(): void {
+    this.eligibility.update((e) => (e ? { ...e, alreadyReviewed: false, myReview: null } : e));
+    this.otherProfile.update((p) => (p ? { ...p, recensioniCount: Math.max(0, p.recensioniCount - 1) } : p));
+    this.writeReviewOpen.set(false);
   }
 
   /**

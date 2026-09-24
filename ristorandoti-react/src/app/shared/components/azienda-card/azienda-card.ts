@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
 import { ApiError } from '../../../core/http/api-error';
 import { Azienda, TIPI_AZIENDA, TipoAzienda } from '../../../core/models/azienda.models';
@@ -10,13 +11,14 @@ import { AziendaFormModal } from '../azienda-form-modal/azienda-form-modal';
 /** Card "Le tue aziende": elenco compatto + pulsante per crearne una nuova (finestra modale). */
 @Component({
   selector: 'app-azienda-card',
-  imports: [AziendaFormModal],
+  imports: [RouterLink, AziendaFormModal],
   templateUrl: './azienda-card.html',
 })
 export class AziendaCard {
   private readonly auth = inject(AuthService);
   private readonly aziendaService = inject(AziendaService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   protected readonly aziende = signal<Azienda[]>([]);
   protected readonly loading = signal(true);
@@ -38,9 +40,9 @@ export class AziendaCard {
   }
 
   protected onCreated(azienda: Azienda): void {
-    this.aziende.update((list) => [azienda, ...list]);
     this.formOpen.set(false);
     this.toast.success(`"${azienda.nome}" creata!`);
+    this.router.navigate(['/azienda', azienda.id]);
   }
 
   private load(): void {

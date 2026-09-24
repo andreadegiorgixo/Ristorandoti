@@ -88,14 +88,17 @@ class AziendaControllerTest {
     void creaAzienda_datiNonValidi_restituisce400ConErroriDiCampo() throws Exception {
         AuthResponseDto utente = registraUtente();
 
-        // Mancano "nome" e "tipo", entrambi obbligatori.
+        // Mancano "nome", "tipo", "fotoProfiloUrl", "bannerUrl" e "fasciaPrezzo", tutti obbligatori.
         mockMvc.perform(post("/api/aziende")
                         .header("Authorization", "Bearer " + utente.getToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"citta\":\"Milano\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.nome").exists())
-                .andExpect(jsonPath("$.fieldErrors.tipo").exists());
+                .andExpect(jsonPath("$.fieldErrors.tipo").exists())
+                .andExpect(jsonPath("$.fieldErrors.fotoProfiloUrl").exists())
+                .andExpect(jsonPath("$.fieldErrors.bannerUrl").exists())
+                .andExpect(jsonPath("$.fieldErrors.fasciaPrezzo").exists());
     }
 
     @Test
@@ -154,7 +157,8 @@ class AziendaControllerTest {
 
     private String aziendaPayload(String nome) {
         return """
-                {"nome":"%s","tipo":"RISTORANTE","citta":"Milano"}
+                {"nome":"%s","tipo":"RISTORANTE","citta":"Milano","fotoProfiloUrl":"https://example.com/logo.png",
+                "bannerUrl":"https://example.com/banner.png","fasciaPrezzo":"EURO_2","servizi":["Wifi gratuito"]}
                 """.formatted(nome);
     }
 

@@ -16,13 +16,13 @@ import com.ristorandoti.application.entity.Azienda;
 public interface AziendaRepository extends JpaRepository<Azienda, Long> {
 
     @Override
-    @EntityGraph(attributePaths = "proprietario")
+    @EntityGraph(attributePaths = {"proprietario", "servizi"})
     Page<Azienda> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = "proprietario")
+    @EntityGraph(attributePaths = {"proprietario", "servizi"})
     Page<Azienda> findByProprietarioId(Long proprietarioId, Pageable pageable);
 
     /** Ricerca per nome (contiene, senza distinzione maiuscole/minuscole): usata dal tipo-mentre-scrivi. */
-    @EntityGraph(attributePaths = "proprietario")
+    @EntityGraph(attributePaths = {"proprietario", "servizi"})
     Page<Azienda> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
 }

@@ -18,19 +18,25 @@
   } @else if (aziende().length) {
     <ul class="mt-3 space-y-2">
       @for (a of aziende(); track a.id) {
-        <li class="flex items-center gap-2.5 rounded-xl border border-slate-100 px-3 py-2">
-          <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700">
-            <svg class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold text-slate-800">{{ a.nome }}</p>
-            <p class="truncate text-xs text-slate-500">
-              {{ tipoLabel(a.tipo) }}
-              @if (a.citta) {
-                · {{ a.citta }}
-              }
-            </p>
-          </div>
+        <li>
+          <a routerLink="/azienda/{{ a.id }}" class="flex items-center gap-2.5 rounded-xl border border-slate-100 px-3 py-2 transition hover:border-brand-300 hover:bg-brand-50/50">
+            @if (a.fotoProfiloUrl) {
+              <img [src]="a.fotoProfiloUrl" alt="Logo di {{ a.nome }}" class="size-9 shrink-0 rounded-lg object-cover" />
+            } @else {
+              <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700">
+                <svg class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
+              </span>
+            }
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-slate-800">{{ a.nome }}</p>
+              <p class="truncate text-xs text-slate-500">
+                {{ tipoLabel(a.tipo) }}
+                @if (a.citta) {
+                  · {{ a.citta }}
+                }
+              </p>
+            </div>
+          </a>
         </li>
       }
     </ul>

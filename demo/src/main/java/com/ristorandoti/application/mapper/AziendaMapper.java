@@ -1,5 +1,8 @@
 package com.ristorandoti.application.mapper;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.ristorandoti.application.dto.AziendaDto;
@@ -22,7 +25,7 @@ public class AziendaMapper {
      * @return una nuova entità {@link Azienda}, non ancora salvata
      */
     public Azienda toEntity(AziendaRequestDto request, User proprietario) {
-        return Azienda.builder()
+        Azienda azienda = Azienda.builder()
                 .proprietario(proprietario)
                 .nome(request.getNome().trim())
                 .tipo(request.getTipo())
@@ -32,7 +35,12 @@ public class AziendaMapper {
                 .telefono(blankToNull(request.getTelefono()))
                 .email(blankToNull(request.getEmail()))
                 .sitoWebUrl(blankToNull(request.getSitoWebUrl()))
+                .fotoProfiloUrl(request.getFotoProfiloUrl().trim())
+                .bannerUrl(request.getBannerUrl().trim())
+                .fasciaPrezzo(request.getFasciaPrezzo())
                 .build();
+        azienda.replaceServizi(cleanServizi(request.getServizi()));
+        return azienda;
     }
 
     /**
@@ -51,6 +59,10 @@ public class AziendaMapper {
         azienda.setTelefono(blankToNull(request.getTelefono()));
         azienda.setEmail(blankToNull(request.getEmail()));
         azienda.setSitoWebUrl(blankToNull(request.getSitoWebUrl()));
+        azienda.setFotoProfiloUrl(request.getFotoProfiloUrl().trim());
+        azienda.setBannerUrl(request.getBannerUrl().trim());
+        azienda.setFasciaPrezzo(request.getFasciaPrezzo());
+        azienda.replaceServizi(cleanServizi(request.getServizi()));
     }
 
     /**
@@ -70,7 +82,31 @@ public class AziendaMapper {
                 .telefono(azienda.getTelefono())
                 .email(azienda.getEmail())
                 .sitoWebUrl(azienda.getSitoWebUrl())
+                .fotoProfiloUrl(azienda.getFotoProfiloUrl())
+                .bannerUrl(azienda.getBannerUrl())
+                .fasciaPrezzo(azienda.getFasciaPrezzo())
+                // Copia in una lista semplice: quella di Hibernate è lazy e la sessione è già
+                // chiusa quando Jackson serializza la risposta (fuori dalla transazione).
+                .servizi(new ArrayList<>(azienda.getServizi()))
                 .dataCreazione(azienda.getDataCreazione())
                 .build();
+    }
+
+    /**
+     * @param servizi servizi ricevuti dal client, eventualmente {@code null}
+     * @return i servizi puliti (senza spazi ai bordi né voci vuote), mai {@code null}
+     */
+    private List<String> cleanServizi(List<String> servizi) {
+        if (servizi == null) {
+            return new ArrayList<>();
+        }
+        List<String> puliti = new ArrayList<>();
+        for (String servizio : servizi) {
+            String trimmed = servizio.trim();
+            if (!trimmed.isEmpty()) {
+                puliti.add(trimmed);
+            }
+        }
+        return puliti;
     }
 }

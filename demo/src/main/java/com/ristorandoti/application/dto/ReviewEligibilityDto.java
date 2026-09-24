@@ -29,4 +29,7 @@ public class ReviewEligibilityDto {
 
     /** {@code true} se l'utente autenticato ha già recensito {@code userId}. */
     private boolean alreadyReviewed;
+
+    /** Recensione già lasciata dall'utente autenticato a {@code userId}; {@code null} se {@code alreadyReviewed} è false. */
+    private ReviewDto myReview;
 }

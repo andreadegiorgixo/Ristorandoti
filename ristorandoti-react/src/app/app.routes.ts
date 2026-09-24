@@ -62,6 +62,12 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'azienda/:aziendaId',
+    title: 'Azienda — Ristorandoti',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/azienda-profile/azienda-profile').then((m) => m.AziendaProfile),
+  },
+  {
     path: '**',
     title: 'Pagina non trovata — Ristorandoti',
     loadComponent: () => import('./pages/not-found/not-found').then((m) => m.NotFound),

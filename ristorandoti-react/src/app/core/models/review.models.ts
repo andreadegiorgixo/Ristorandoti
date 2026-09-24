@@ -13,3 +13,20 @@ export interface Review {
   dataCreazione: string;
   dataAggiornamento: string;
 }
+
+/** Dati per creare o aggiornare una recensione (ReviewRequestDto). */
+export interface ReviewRequest {
+  /** Voto da 1 a 5. */
+  valutazione: number;
+  testo: string;
+}
+
+/** Risposta di GET /api/reviews/eligibility/{userId} (ReviewEligibilityDto). */
+export interface ReviewEligibility {
+  /** true se l'utente autenticato può recensire questo utente (esperienza sovrapposta, non se stesso). */
+  canReview: boolean;
+  /** true se l'utente autenticato ha già recensito questo utente. */
+  alreadyReviewed: boolean;
+  /** Recensione già lasciata dall'utente autenticato, se alreadyReviewed è true. */
+  myReview: Review | null;
+}

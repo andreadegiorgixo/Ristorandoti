@@ -26,6 +26,9 @@ public class ExperienceDto {
     /** Id dell'azienda registrata collegata; {@code null} se nessuna corrispondenza. */
     private Long aziendaId;
 
+    /** URL del logo dell'azienda registrata collegata; {@code null} se nessuna corrispondenza. */
+    private String aziendaLogoUrl;
+
     private String ruolo;
 
     private LocalDate dataStart;

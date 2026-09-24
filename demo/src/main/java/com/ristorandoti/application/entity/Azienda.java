@@ -1,8 +1,12 @@
 package com.ristorandoti.application.entity;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,7 +41,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = "proprietario")
+@ToString(exclude = {"proprietario", "servizi"})
 public class Azienda {
 
     @Id
@@ -75,6 +79,25 @@ public class Azienda {
     @Column(name = "sito_web_url", length = 1000)
     private String sitoWebUrl;
 
+    /** URL del logo aziendale (quadrato), come la foto profilo di un utente. */
+    @Column(name = "foto_profilo_url", length = 1000)
+    private String fotoProfiloUrl;
+
+    /** URL del banner (rettangolare) mostrato in testa al profilo aziendale. */
+    @Column(name = "banner_url", length = 1000)
+    private String bannerUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fascia_prezzo", length = 20)
+    private FasciaPrezzo fasciaPrezzo;
+
+    /** Servizi offerti (tabella {@code azienda_servizi}, migration {@code V9}). */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "azienda_servizi", joinColumns = @JoinColumn(name = "azienda_id"))
+    @Column(name = "servizio", length = 100)
+    @Builder.Default
+    private List<String> servizi = new ArrayList<>();
+
     @Column(name = "data_creazione", nullable = false, updatable = false)
     private Instant dataCreazione;
 
@@ -83,5 +106,16 @@ public class Azienda {
         if (dataCreazione == null) {
             dataCreazione = Instant.now();
         }
+    }
+
+    /**
+     * Sostituisce i servizi offerti mantenendo la stessa istanza di lista (Hibernate la traccia
+     * per applicare correttamente le insert/delete sulla tabella {@code azienda_servizi}).
+     *
+     * @param nuovi nuovi servizi
+     */
+    public void replaceServizi(List<String> nuovi) {
+        servizi.clear();
+        servizi.addAll(nuovi);
     }
 }

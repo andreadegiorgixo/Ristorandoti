@@ -68,10 +68,14 @@ public class ReviewService {
             throw new ResourceNotFoundException("Utente " + destinatarioId + " non trovato");
         }
         boolean self = autoreId.equals(destinatarioId);
-        boolean alreadyReviewed = reviewRepository.findByAutoreIdAndDestinatarioId(autoreId, destinatarioId).isPresent();
+        Review existing = reviewRepository.findByAutoreIdAndDestinatarioId(autoreId, destinatarioId).orElse(null);
+        ReviewDto myReview = existing != null
+                ? reviewMapper.toDto(existing, profileRepository.findByUserId(autoreId).orElse(null))
+                : null;
         return ReviewEligibilityDto.builder()
                 .canReview(!self && hasOverlappingExperience(autoreId, destinatarioId))
-                .alreadyReviewed(alreadyReviewed)
+                .alreadyReviewed(existing != null)
+                .myReview(myReview)
                 .build();
     }
 

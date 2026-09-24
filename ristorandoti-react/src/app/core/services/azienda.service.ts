@@ -16,6 +16,10 @@ export class AziendaService {
     return this.http.post<Azienda>(this.baseUrl, payload).pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
+  getById(id: number): Observable<Azienda> {
+    return this.http.get<Azienda>(`${this.baseUrl}/${id}`).pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
   /** Aziende di un utente, dalla più recente. */
   getByUser(userId: number, page: number, size = 20): Observable<Page<Azienda>> {
     const params = new HttpParams().set('page', page).set('size', size);
