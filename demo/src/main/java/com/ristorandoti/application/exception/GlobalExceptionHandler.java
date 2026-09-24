@@ -104,6 +104,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Operazione di recensione non valida (auto-recensione, nessuna sovrapposizione lavorativa)
+     * → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da {@code ReviewService.upsert}
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(InvalidReviewException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidReview(InvalidReviewException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    /**
      * File oltre {@code spring.servlet.multipart.max-file-size} → {@code 413 Payload Too Large}.
      *
      * @param ex      eccezione lanciata dal parser multipart

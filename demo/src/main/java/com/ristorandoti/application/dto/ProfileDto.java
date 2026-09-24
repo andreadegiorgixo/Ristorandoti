@@ -51,4 +51,10 @@ public class ProfileDto {
 
     /** {@code true} se l'utente che fa la richiesta segue questo profilo (sempre {@code false} sul proprio). */
     private boolean followedByMe;
+
+    /** Numero di recensioni ricevute. */
+    private long recensioniCount;
+
+    /** Media dei voti ricevuti (1-5), {@code null} se non ha ancora recensioni. */
+    private Double valutazioneMedia;
 }

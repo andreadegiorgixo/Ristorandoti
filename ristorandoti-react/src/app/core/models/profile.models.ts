@@ -33,6 +33,9 @@ export interface Profile {
   followingCount: number;
   /** true se l'utente loggato segue questo profilo (sempre false sul proprio). */
   followedByMe: boolean;
+  recensioniCount: number;
+  /** Media dei voti ricevuti (1-5), null se non ha ancora recensioni. */
+  valutazioneMedia: number | null;
 }
 
 export type ExperienceRequest = Omit<Experience, 'id'>;

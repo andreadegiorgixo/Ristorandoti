@@ -13,6 +13,7 @@ import { Avatar } from '../../shared/components/avatar/avatar';
 import { PostCard } from '../../shared/components/post-card/post-card';
 import { PostSkeleton } from '../../shared/components/post-card/post-skeleton';
 import { PostComposer } from '../../shared/components/post-composer/post-composer';
+import { ReviewListModal } from '../../shared/components/review-list-modal/review-list-modal';
 import { InfiniteScrollDirective } from '../../shared/directives/infinite-scroll.directive';
 import { formatPeriod } from '../../shared/utils/dates';
 import { PostPager } from '../../shared/utils/post-pager';
@@ -25,7 +26,7 @@ type Tab = 'percorso' | 'post';
  */
 @Component({
   selector: 'app-profile',
-  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, InfiniteScrollDirective],
+  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, ReviewListModal, InfiniteScrollDirective],
   templateUrl: './profile.html',
 })
 export class Profile implements OnDestroy {
@@ -49,6 +50,7 @@ export class Profile implements OnDestroy {
   protected readonly error = signal<ApiError | null>(null);
   protected readonly tab = signal<Tab>('percorso');
   protected readonly followPending = signal(false);
+  protected readonly reviewsOpen = signal(false);
 
   protected readonly pager = new PostPager((page) => this.postService.getByUser(this.targetId(), page));
   protected readonly formatPeriod = formatPeriod;
@@ -74,6 +76,7 @@ export class Profile implements OnDestroy {
     this.error.set(null);
     this.otherProfile.set(null);
     this.tab.set('percorso');
+    this.reviewsOpen.set(false);
     this.pager.reset();
 
     const request = this.isOwn() ? this.profileService.getMe() : this.profileService.getByUserId(id);
@@ -91,6 +94,14 @@ export class Profile implements OnDestroy {
 
   protected retry(): void {
     this.load(this.targetId());
+  }
+
+  protected openReviews(): void {
+    this.reviewsOpen.set(true);
+  }
+
+  protected closeReviews(): void {
+    this.reviewsOpen.set(false);
   }
 
   /**

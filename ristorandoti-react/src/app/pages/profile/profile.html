@@ -119,11 +119,20 @@
     @if (tab() === 'percorso') {
       <!-- Esperienze -->
       <section class="card mt-4 p-5 sm:p-6" aria-labelledby="exp-title">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-3">
           <h2 id="exp-title" class="text-lg font-bold">Esperienza</h2>
-          @if (isOwn() && p.esperienze.length) {
-            <a routerLink="/profile/edit" fragment="esperienze" class="text-sm font-semibold text-brand-700 hover:underline">Modifica</a>
-          }
+          <div class="flex shrink-0 items-center gap-3">
+            <button type="button" (click)="openReviews()" class="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01Z" /></svg>
+              Recensioni
+              @if (p.recensioniCount > 0) {
+                <span class="font-normal text-slate-500">({{ p.recensioniCount }})</span>
+              }
+            </button>
+            @if (isOwn() && p.esperienze.length) {
+              <a routerLink="/profile/edit" fragment="esperienze" class="text-sm font-semibold text-brand-700 hover:underline">Modifica</a>
+            }
+          </div>
         </div>
 
         @if (p.esperienze.length) {
@@ -226,6 +235,10 @@
           </div>
         }
       </div>
+    }
+
+    @if (reviewsOpen()) {
+      <app-review-list-modal [userId]="p.userId" [userName]="p.name" (closed)="closeReviews()" />
     }
   }
 </div>

@@ -28,13 +28,16 @@ import com.ristorandoti.application.entity.Profile;
 public class ProfileMapper {
 
     /**
-     * @param profile        profilo con utente già caricato
-     * @param followersCount numero di follower dell'utente
-     * @param followingCount numero di utenti seguiti
-     * @param followedByMe   se l'utente che fa la richiesta segue questo profilo
+     * @param profile          profilo con utente già caricato
+     * @param followersCount   numero di follower dell'utente
+     * @param followingCount   numero di utenti seguiti
+     * @param followedByMe     se l'utente che fa la richiesta segue questo profilo
+     * @param recensioniCount  numero di recensioni ricevute
+     * @param valutazioneMedia media dei voti ricevuti, {@code null} se nessuna recensione
      * @return il DTO completo del profilo
      */
-    public ProfileDto toDto(Profile profile, long followersCount, long followingCount, boolean followedByMe) {
+    public ProfileDto toDto(Profile profile, long followersCount, long followingCount, boolean followedByMe,
+                            long recensioniCount, Double valutazioneMedia) {
         return ProfileDto.builder()
                 .id(profile.getId())
                 .userId(profile.getUser().getId())
@@ -51,6 +54,8 @@ public class ProfileMapper {
                 .followersCount(followersCount)
                 .followingCount(followingCount)
                 .followedByMe(followedByMe)
+                .recensioniCount(recensioniCount)
+                .valutazioneMedia(valutazioneMedia)
                 .build();
     }
 

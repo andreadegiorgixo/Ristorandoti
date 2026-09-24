@@ -11,6 +11,7 @@ import com.ristorandoti.application.exception.ResourceNotFoundException;
 import com.ristorandoti.application.mapper.ProfileMapper;
 import com.ristorandoti.application.repository.FollowRepository;
 import com.ristorandoti.application.repository.ProfileRepository;
+import com.ristorandoti.application.repository.ReviewRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final FollowRepository followRepository;
+    private final ReviewRepository reviewRepository;
     private final ProfileMapper profileMapper;
 
     /**
@@ -59,7 +61,10 @@ public class ProfileService {
         long followingCount = followRepository.countByFollowerId(userId);
         boolean followedByMe = !currentUserId.equals(userId)
                 && followRepository.existsByFollowerIdAndFollowedId(currentUserId, userId);
-        return profileMapper.toDto(profile, followersCount, followingCount, followedByMe);
+        long recensioniCount = reviewRepository.countByDestinatarioId(userId);
+        Double valutazioneMedia = reviewRepository.averageValutazioneByDestinatarioId(userId);
+        return profileMapper.toDto(profile, followersCount, followingCount, followedByMe,
+                recensioniCount, valutazioneMedia);
     }
 
     /**
@@ -97,7 +102,9 @@ public class ProfileService {
         log.debug("Profilo {} aggiornato dall'utente {}", saved.getId(), userId);
         long followersCount = followRepository.countByFollowedId(userId);
         long followingCount = followRepository.countByFollowerId(userId);
-        return profileMapper.toDto(saved, followersCount, followingCount, false);
+        long recensioniCount = reviewRepository.countByDestinatarioId(userId);
+        Double valutazioneMedia = reviewRepository.averageValutazioneByDestinatarioId(userId);
+        return profileMapper.toDto(saved, followersCount, followingCount, false, recensioniCount, valutazioneMedia);
     }
 
     private Profile findByUserId(Long userId) {
