@@ -1,11 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject, catchError, debounceTime, map, of, switchMap } from 'rxjs';
 
 import { HasUnsavedChanges } from '../../core/guards/unsaved-changes.guard';
 import { ApiError } from '../../core/http/api-error';
+import { Azienda } from '../../core/models/azienda.models';
 import { Education, Experience, Profile, ProfileUpdateRequest } from '../../core/models/profile.models';
+import { AziendaService } from '../../core/services/azienda.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -17,10 +20,14 @@ import { notInFuture, periodValidator } from '../../shared/utils/validators';
 /** Limiti allineati ai DTO del backend. */
 const LIMITS = { sommario: 500, azienda: 200, ruolo: 150, descrizione: 2000, istituto: 200, titolo: 200 };
 
+/** Sotto questa lunghezza non si cerca ancora (evita chiamate inutili). */
+const AZIENDA_SEARCH_MIN_LENGTH = 2;
+
 type ImageField = 'profilePictureUrl' | 'bannerUrl';
 
 type ExperienceForm = FormGroup<{
   azienda: FormControl<string>;
+  aziendaId: FormControl<number | null>;
   ruolo: FormControl<string>;
   dataStart: FormControl<string>;
   current: FormControl<boolean>;
@@ -47,6 +54,7 @@ type EducationForm = FormGroup<{
 })
 export class ProfileEdit implements OnInit, HasUnsavedChanges {
   private readonly profileService = inject(ProfileService);
+  private readonly aziendaService = inject(AziendaService);
   private readonly uploadService = inject(UploadService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -69,6 +77,34 @@ export class ProfileEdit implements OnInit, HasUnsavedChanges {
 
   /** Voci di esperienza/formazione aperte in modifica (le altre mostrano il riepilogo). */
   protected readonly openItems = signal(new Set<AbstractControl>());
+
+  /** Ricerca aziende per il collegamento dell'esperienza (tipo-mentre-scrivi). */
+  private readonly aziendaQuery$ = new Subject<{ group: ExperienceForm; term: string }>();
+  protected readonly aziendaSearchGroup = signal<ExperienceForm | null>(null);
+  protected readonly aziendaSuggestions = signal<Azienda[]>([]);
+  protected readonly aziendaSearching = signal(false);
+
+  private readonly aziendaQuerySub = this.aziendaQuery$
+    .pipe(
+      debounceTime(300),
+      switchMap(({ group, term }) => {
+        const trimmed = term.trim();
+        if (trimmed.length < AZIENDA_SEARCH_MIN_LENGTH) {
+          this.aziendaSearching.set(false);
+          return of({ group, results: [] as Azienda[] });
+        }
+        this.aziendaSearching.set(true);
+        return this.aziendaService.search(trimmed).pipe(
+          map((result) => ({ group, results: result.content })),
+          catchError(() => of({ group, results: [] as Azienda[] })),
+        );
+      }),
+      takeUntilDestroyed(),
+    )
+    .subscribe(({ group, results }) => {
+      this.aziendaSearching.set(false);
+      if (this.aziendaSearchGroup() === group) this.aziendaSuggestions.set(results);
+    });
 
   protected readonly form = new FormGroup({
     // URL restituiti da POST /api/uploads/images dopo aver scelto il file
@@ -163,6 +199,31 @@ export class ProfileEdit implements OnInit, HasUnsavedChanges {
       }
       return next;
     });
+  }
+
+  /** L'utente digita nel campo azienda: cerca aziende registrate corrispondenti. */
+  protected onAziendaInput(group: ExperienceForm, term: string): void {
+    if (group.controls.aziendaId.value !== null) group.controls.aziendaId.setValue(null);
+    this.aziendaSearchGroup.set(group);
+    this.aziendaQuery$.next({ group, term });
+  }
+
+  /** L'utente sceglie un'azienda dai suggerimenti: si collega e si allinea il nome mostrato. */
+  protected selectAzienda(group: ExperienceForm, azienda: Azienda): void {
+    group.patchValue({ azienda: azienda.nome, aziendaId: azienda.id });
+    this.form.markAsDirty();
+    this.closeAziendaSuggestions();
+  }
+
+  /** Toglie il collegamento, mantenendo il testo libero già inserito. */
+  protected unlinkAzienda(group: ExperienceForm): void {
+    group.controls.aziendaId.setValue(null);
+    this.form.markAsDirty();
+  }
+
+  protected closeAziendaSuggestions(): void {
+    this.aziendaSearchGroup.set(null);
+    this.aziendaSuggestions.set([]);
   }
 
   /** "Lavoro qui attualmente" / "In corso": la data di fine non serve. */
@@ -273,6 +334,7 @@ export class ProfileEdit implements OnInit, HasUnsavedChanges {
       sommario: v.sommario.trim(),
       esperienze: v.esperienze.map((e) => ({
         azienda: e.azienda.trim(),
+        aziendaId: e.aziendaId,
         ruolo: e.ruolo.trim(),
         dataStart: monthToIso(e.dataStart),
         dataEnd: !e.current && e.dataEnd ? monthToIso(e.dataEnd) : null,
@@ -333,6 +395,7 @@ export class ProfileEdit implements OnInit, HasUnsavedChanges {
           nonNullable: true,
           validators: [Validators.required, Validators.maxLength(LIMITS.azienda)],
         }),
+        aziendaId: new FormControl(e?.aziendaId ?? null),
         ruolo: new FormControl(e?.ruolo ?? '', {
           nonNullable: true,
           validators: [Validators.required, Validators.maxLength(LIMITS.ruolo)],

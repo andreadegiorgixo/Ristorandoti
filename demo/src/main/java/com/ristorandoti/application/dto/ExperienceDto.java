@@ -23,6 +23,9 @@ public class ExperienceDto {
 
     private String azienda;
 
+    /** Id dell'azienda registrata collegata; {@code null} se nessuna corrispondenza. */
+    private Long aziendaId;
+
     private String ruolo;
 
     private LocalDate dataStart;

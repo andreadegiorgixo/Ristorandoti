@@ -1,0 +1,87 @@
+package com.ristorandoti.application.entity;
+
+import java.time.Instant;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+/**
+ * Azienda (ristorante, locale, attività di ristorazione) creata da un utente della piattaforma
+ * (tabella {@code aziende}, migration Flyway {@code V7__create_azienda_schema.sql}).
+ *
+ * <p>Relazione con {@link User}: un utente può creare più aziende (nessun vincolo UNIQUE su
+ * {@code proprietario_id}); non esiste un concetto di "membri" oltre al proprietario.</p>
+ */
+@Entity
+@Table(name = "aziende")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "proprietario")
+public class Azienda {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    /** Utente che ha creato l'azienda; unico autorizzato a modificarla o eliminarla. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "proprietario_id", nullable = false)
+    private User proprietario;
+
+    @Column(name = "nome", nullable = false, length = 200)
+    private String nome;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 50)
+    private TipoAzienda tipo;
+
+    @Column(name = "descrizione", length = 2000)
+    private String descrizione;
+
+    @Column(name = "indirizzo", length = 300)
+    private String indirizzo;
+
+    @Column(name = "citta", length = 100)
+    private String citta;
+
+    @Column(name = "telefono", length = 30)
+    private String telefono;
+
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "sito_web_url", length = 1000)
+    private String sitoWebUrl;
+
+    @Column(name = "data_creazione", nullable = false, updatable = false)
+    private Instant dataCreazione;
+
+    @PrePersist
+    void onCreate() {
+        if (dataCreazione == null) {
+            dataCreazione = Instant.now();
+        }
+    }
+}

@@ -10,9 +10,11 @@ import com.ristorandoti.application.dto.EducationRequestDto;
 import com.ristorandoti.application.dto.ExperienceDto;
 import com.ristorandoti.application.dto.ExperienceRequestDto;
 import com.ristorandoti.application.dto.ProfileDto;
+import com.ristorandoti.application.entity.Azienda;
 import com.ristorandoti.application.entity.Education;
 import com.ristorandoti.application.entity.Experience;
 import com.ristorandoti.application.entity.Profile;
+import com.ristorandoti.application.repository.AziendaRepository;
 
 /**
  * Mapper tra l'entità {@link Profile} (con esperienze e istruzione) e i relativi DTO.
@@ -26,6 +28,12 @@ import com.ristorandoti.application.entity.Profile;
  */
 @Component
 public class ProfileMapper {
+
+    private final AziendaRepository aziendaRepository;
+
+    public ProfileMapper(AziendaRepository aziendaRepository) {
+        this.aziendaRepository = aziendaRepository;
+    }
 
     /**
      * @param profile          profilo con utente già caricato
@@ -60,9 +68,11 @@ public class ProfileMapper {
     }
 
     public ExperienceDto toDto(Experience experience) {
+        Azienda aziendaCollegata = experience.getAziendaCollegata();
         return ExperienceDto.builder()
                 .id(experience.getId())
                 .azienda(experience.getAzienda())
+                .aziendaId(aziendaCollegata != null ? aziendaCollegata.getId() : null)
                 .ruolo(experience.getRuolo())
                 .dataStart(experience.getDataStart())
                 .dataEnd(experience.getDataEnd())
@@ -84,6 +94,11 @@ public class ProfileMapper {
      * Converte le esperienze ricevute in nuove entità, non ancora collegate al profilo
      * (lo fa {@link Profile#replaceEsperienze}).
      *
+     * <p>Se {@link ExperienceRequestDto#getAziendaId()} è valorizzato, l'esperienza viene
+     * collegata all'azienda registrata corrispondente. Se l'id non corrisponde più a nessuna
+     * azienda (es. eliminata nel frattempo), il collegamento resta vuoto: l'esperienza si salva
+     * comunque con il solo nome libero.</p>
+     *
      * @param dtos esperienze già validate
      * @return nuove entità {@link Experience}
      */
@@ -91,6 +106,9 @@ public class ProfileMapper {
         return dtos.stream()
                 .map(dto -> Experience.builder()
                         .azienda(dto.getAzienda().trim())
+                        .aziendaCollegata(dto.getAziendaId() != null
+                                ? aziendaRepository.findById(dto.getAziendaId()).orElse(null)
+                                : null)
                         .ruolo(dto.getRuolo().trim())
                         .dataStart(dto.getDataStart())
                         .dataEnd(dto.getDataEnd())

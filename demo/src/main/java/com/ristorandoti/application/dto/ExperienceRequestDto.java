@@ -32,6 +32,13 @@ public class ExperienceRequestDto {
     @Size(max = 200, message = "L'azienda non può superare 200 caratteri")
     private String azienda;
 
+    /**
+     * Id dell'azienda registrata scelta dalla ricerca, se corrisponde. {@code null} se l'utente
+     * ha lasciato solo il testo libero, oppure se l'azienda scelta non esiste più: in entrambi i
+     * casi l'esperienza viene comunque salvata con il solo nome.
+     */
+    private Long aziendaId;
+
     @NotBlank(message = "Il ruolo è obbligatorio")
     @Size(max = 150, message = "Il ruolo non può superare 150 caratteri")
     private String ruolo;

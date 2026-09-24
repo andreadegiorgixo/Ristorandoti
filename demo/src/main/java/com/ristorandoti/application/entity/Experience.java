@@ -22,8 +22,9 @@ import lombok.ToString;
 /**
  * Esperienza lavorativa di un {@link Profile} (tabella {@code experiences}).
  *
- * <p>Per ora l'azienda è una semplice stringa: quando esisteranno le pagine dei ristoranti
- * potrà diventare una relazione verso un'entità dedicata.</p>
+ * <p>Il nome dell'azienda resta sempre una stringa libera ({@link #azienda}), così l'esperienza
+ * è comunque visibile anche se non corrisponde a nessuna azienda registrata. Quando corrisponde,
+ * {@link #aziendaCollegata} contiene il collegamento verso l'entità {@link Azienda}.</p>
  */
 @Entity
 @Table(name = "experiences")
@@ -46,9 +47,14 @@ public class Experience {
     @JoinColumn(name = "profile_id", nullable = false)
     private Profile profile;
 
-    /** Nome dell'azienda o del ristorante. */
+    /** Nome dell'azienda o del ristorante, inserito liberamente dall'utente. */
     @Column(name = "azienda", nullable = false, length = 200)
     private String azienda;
+
+    /** Azienda registrata a cui è collegata l'esperienza; {@code null} se nessuna corrispondenza. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "azienda_id")
+    private Azienda aziendaCollegata;
 
     /** Ruolo ricoperto, es. "Sous Chef". */
     @Column(name = "ruolo", nullable = false, length = 150)

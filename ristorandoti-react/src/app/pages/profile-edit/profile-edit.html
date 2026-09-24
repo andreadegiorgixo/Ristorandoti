@@ -142,10 +142,51 @@
                     <input [id]="'exp-' + i + '-ruolo'" formControlName="ruolo" placeholder="Es. Sous Chef" class="form-input" [class.form-input-error]="showError(group.controls.ruolo)" [attr.aria-invalid]="showError(group.controls.ruolo)" />
                     @if (showError(group.controls.ruolo)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.ruolo) }}</p> }
                   </div>
-                  <div>
+                  <div class="relative">
                     <label [for]="'exp-' + i + '-azienda'" class="mb-1.5 block text-sm font-semibold text-slate-700">Ristorante / azienda *</label>
-                    <input [id]="'exp-' + i + '-azienda'" formControlName="azienda" placeholder="Es. Trattoria da Lucia" class="form-input" [class.form-input-error]="showError(group.controls.azienda)" [attr.aria-invalid]="showError(group.controls.azienda)" />
-                    @if (showError(group.controls.azienda)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.azienda) }}</p> }
+                    <input
+                      [id]="'exp-' + i + '-azienda'"
+                      formControlName="azienda"
+                      placeholder="Es. Trattoria da Lucia"
+                      autocomplete="off"
+                      class="form-input"
+                      [class.form-input-error]="showError(group.controls.azienda)"
+                      [attr.aria-invalid]="showError(group.controls.azienda)"
+                      (input)="onAziendaInput(group, $any($event.target).value)"
+                      (blur)="closeAziendaSuggestions()"
+                    />
+                    @if (showError(group.controls.azienda)) {
+                      <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.azienda) }}</p>
+                    } @else if (group.controls.aziendaId.value) {
+                      <p class="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                        Collegata all'azienda registrata
+                        <button type="button" (mousedown)="$event.preventDefault()" (click)="unlinkAzienda(group)" class="font-semibold text-slate-500 underline decoration-dotted hover:text-slate-700">Scollega</button>
+                      </p>
+                    } @else if (aziendaSearchGroup() !== group) {
+                      <p class="mt-1.5 text-xs text-slate-400">Cerca tra le aziende registrate, oppure lascia solo il testo.</p>
+                    }
+
+                    @if (aziendaSearchGroup() === group) {
+                      <div class="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                        @if (aziendaSearching()) {
+                          <p class="px-3 py-2.5 text-sm text-slate-500">Ricerca in corso…</p>
+                        } @else if (aziendaSuggestions().length) {
+                          <ul>
+                            @for (s of aziendaSuggestions(); track s.id) {
+                              <li>
+                                <button type="button" (mousedown)="$event.preventDefault()" (click)="selectAzienda(group, s)" class="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-brand-50">
+                                  <span class="font-semibold text-slate-800">{{ s.nome }}</span>
+                                  <span class="text-xs text-slate-500">{{ s.citta || 'Città non indicata' }}</span>
+                                </button>
+                              </li>
+                            }
+                          </ul>
+                        } @else if (group.controls.azienda.value.trim().length >= 2) {
+                          <p class="px-3 py-2.5 text-sm text-slate-500">Nessuna azienda trovata: verrà salvata solo come testo.</p>
+                        }
+                      </div>
+                    }
                   </div>
                   <div>
                     <label [for]="'exp-' + i + '-start'" class="mb-1.5 block text-sm font-semibold text-slate-700">Inizio *</label>

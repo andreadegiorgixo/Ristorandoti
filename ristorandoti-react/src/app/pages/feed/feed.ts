@@ -5,6 +5,7 @@ import { Post } from '../../core/models/post.models';
 import { AuthService } from '../../core/services/auth.service';
 import { PostService } from '../../core/services/post.service';
 import { ProfileService } from '../../core/services/profile.service';
+import { AziendaCard } from '../../shared/components/azienda-card/azienda-card';
 import { Avatar } from '../../shared/components/avatar/avatar';
 import { PostCard } from '../../shared/components/post-card/post-card';
 import { PostSkeleton } from '../../shared/components/post-card/post-skeleton';
@@ -15,7 +16,7 @@ import { PostPager } from '../../shared/utils/post-pager';
 /** Home dell'utente autenticato: card profilo, composer e feed della community con scroll infinito. */
 @Component({
   selector: 'app-feed',
-  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, InfiniteScrollDirective],
+  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, AziendaCard, InfiniteScrollDirective],
   templateUrl: './feed.html',
 })
 export class Feed implements OnInit, OnDestroy {

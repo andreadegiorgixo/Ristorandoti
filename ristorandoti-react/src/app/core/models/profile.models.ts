@@ -2,6 +2,8 @@
 export interface Experience {
   id: number;
   azienda: string;
+  /** Id dell'azienda registrata collegata; null se nessuna corrispondenza. */
+  aziendaId: number | null;
   ruolo: string;
   dataStart: string;
   /** null = posizione attuale */
