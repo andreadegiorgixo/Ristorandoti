@@ -19,6 +19,7 @@ import com.ristorandoti.application.entity.Role;
 import com.ristorandoti.application.entity.RoleName;
 import com.ristorandoti.application.entity.User;
 import com.ristorandoti.application.exception.InvalidCredentialsException;
+import com.ristorandoti.application.exception.ResourceNotFoundException;
 import com.ristorandoti.application.exception.UserAlreadyExistsException;
 import com.ristorandoti.application.mapper.UserMapper;
 import com.ristorandoti.application.repository.RoleRepository;
@@ -42,8 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuthService {
 
-    /** Messaggio unico per ogni fallimento di login: non rivela se l'email esiste o meno. */
-    private static final String INVALID_CREDENTIALS_MESSAGE = "Email o password non corretti";
+    /** Messaggio per password errata su un'email esistente. */
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Password non corretta";
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -52,6 +53,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final GoogleTokenVerifier googleTokenVerifier;
+    private final ProfileService profileService;
 
     /**
      * Registra un nuovo utente e lo autentica immediatamente restituendo un JWT
@@ -80,6 +82,7 @@ public class AuthService {
         user.setRoles(new HashSet<>(Set.of(defaultRole())));
 
         User saved = userRepository.save(user);
+        profileService.createEmptyProfile(saved);
         log.info("Nuovo utente registrato con id {}", saved.getId());
 
         String token = jwtService.generateToken(saved);
@@ -93,15 +96,24 @@ public class AuthService {
      * {@link AuthenticationManager}, che usa internamente
      * {@link com.ristorandoti.application.security.CustomUserDetailsService} e il
      * {@link PasswordEncoder}. Qualsiasi fallimento viene convertito in
-     * {@link InvalidCredentialsException} con un messaggio generico.</p>
+     * {@link InvalidCredentialsException}.</p>
+     *
+     * <p>Un'email non registrata produce invece {@link ResourceNotFoundException} (404), così il
+     * frontend può reindirizzare alla registrazione. Compromesso voluto: chiunque può scoprire se
+     * un'email è registrata (lo rivelava già {@code /register} con il 409).</p>
      *
      * @param request credenziali già validate dal controller
      * @return token JWT e dati base dell'utente autenticato
-     * @throws InvalidCredentialsException se email o password non sono corrette
+     * @throws ResourceNotFoundException   se nessun account usa quell'email
+     * @throws InvalidCredentialsException se la password non è corretta
      */
     @Transactional(readOnly = true)
     public AuthResponseDto login(LoginRequestDto request) {
         String email = normalizeEmail(request.getEmail());
+
+        if (!userRepository.existsByEmail(email)) {
+            throw new ResourceNotFoundException("Nessun account registrato con questa email");
+        }
 
         try {
             authenticationManager.authenticate(
@@ -145,6 +157,7 @@ public class AuthService {
                     .roles(new HashSet<>(Set.of(defaultRole())))
                     .build();
             User saved = userRepository.save(created);
+            profileService.createEmptyProfile(saved);
             log.info("Nuovo utente registrato con Google, id {}", saved.getId());
             return saved;
         });

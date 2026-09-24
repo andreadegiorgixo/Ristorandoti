@@ -7,7 +7,11 @@
     <nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-slate-600" aria-label="Footer">
       <a routerLink="/mission" class="transition hover:text-slate-900">Obiettivo</a>
       <a routerLink="/about" class="transition hover:text-slate-900">Chi siamo</a>
-      <a routerLink="/login" class="transition hover:text-slate-900">Accedi</a>
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/feed" class="transition hover:text-slate-900">Feed</a>
+      } @else {
+        <a routerLink="/login" class="transition hover:text-slate-900">Accedi</a>
+      }
       <a href="https://www.andreadegiorgio.io" target="_blank" rel="noopener" class="transition hover:text-slate-900">Portfolio</a>
     </nav>
   </div>

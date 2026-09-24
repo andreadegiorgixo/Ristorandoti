@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -12,6 +13,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.ristorandoti.application.dto.ErrorResponseDto;
@@ -45,6 +48,85 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleUserAlreadyExists(UserAlreadyExistsException ex,
                                                                     HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
+    }
+
+    /**
+     * Risorsa (utente, profilo, ...) inesistente → {@code 404 Not Found}.
+     * Su {@code /api/auth/login} indica un'email non registrata: il frontend può proporre la registrazione.
+     *
+     * @param ex      eccezione lanciata dai service
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleResourceNotFound(ResourceNotFoundException ex,
+                                                                   HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request, null);
+    }
+
+    /**
+     * Violazione di un vincolo del database (es. due like simultanei dello stesso utente allo
+     * stesso post, bloccati dal vincolo UNIQUE) → {@code 409 Conflict}.
+     *
+     * @param ex      eccezione lanciata da Spring Data
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDto> handleDataIntegrity(DataIntegrityViolationException ex,
+                                                                HttpServletRequest request) {
+        log.warn("Vincolo di integrità violato su {}: {}", request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        return build(HttpStatus.CONFLICT, "Operazione in conflitto con lo stato attuale dei dati", request, null);
+    }
+
+    /**
+     * File caricato non valido (vuoto o formato non supportato) → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da {@code FileStorageService}
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidFile(InvalidFileException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    /**
+     * Operazione di follow non valida (es. auto-follow) → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da {@code FollowService.follow}
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(InvalidFollowException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidFollow(InvalidFollowException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    /**
+     * File oltre {@code spring.servlet.multipart.max-file-size} → {@code 413 Payload Too Large}.
+     *
+     * @param ex      eccezione lanciata dal parser multipart
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleMaxUploadSize(MaxUploadSizeExceededException ex,
+                                                                HttpServletRequest request) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, "L'immagine è troppo grande: il limite è 10 MB", request, null);
+    }
+
+    /**
+     * Richiesta multipart senza il campo {@code file} → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da Spring MVC
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponseDto> handleMissingPart(MissingServletRequestPartException ex,
+                                                              HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Seleziona un'immagine da caricare", request, null);
     }
 
     /**

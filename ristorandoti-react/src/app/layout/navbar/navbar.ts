@@ -1,24 +1,35 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
+import { ProfileService } from '../../core/services/profile.service';
+import { Avatar } from '../../shared/components/avatar/avatar';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, Avatar],
   templateUrl: './navbar.html',
 })
 export class Navbar {
   protected readonly auth = inject(AuthService);
+  protected readonly profile = inject(ProfileService);
   private readonly router = inject(Router);
 
   protected readonly menuOpen = signal(false);
 
-  protected readonly links = [
+  private readonly publicLinks = [
     { path: '/', label: 'Home', exact: true },
     { path: '/mission', label: 'Obiettivo', exact: false },
     { path: '/about', label: 'Chi siamo', exact: false },
   ];
+
+  private readonly memberLinks = [
+    { path: '/feed', label: 'Feed', exact: true },
+    { path: '/profile', label: 'Profilo', exact: false },
+  ];
+
+  /** Da loggato contano feed e profilo; le pagine informative restano nel footer. */
+  protected readonly links = computed(() => (this.auth.isAuthenticated() ? this.memberLinks : this.publicLinks));
 
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);

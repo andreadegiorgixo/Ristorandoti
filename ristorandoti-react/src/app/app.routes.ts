@@ -1,11 +1,14 @@
 import { Routes } from '@angular/router';
 
+import { authGuard, landingGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
   {
     path: '',
     title: 'Ristorandoti — La community dei ristoratori',
+    canActivate: [landingGuard],
     loadComponent: () => import('./pages/home/home').then((m) => m.Home),
   },
   {
@@ -29,6 +32,34 @@ export const routes: Routes = [
     title: 'Registrati — Ristorandoti',
     canActivate: [guestGuard],
     loadComponent: () => import('./pages/register/register').then((m) => m.Register),
+  },
+  {
+    path: 'feed',
+    title: 'Feed — Ristorandoti',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/feed/feed').then((m) => m.Feed),
+  },
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        title: 'Il mio profilo — Ristorandoti',
+        loadComponent: () => import('./pages/profile/profile').then((m) => m.Profile),
+      },
+      {
+        path: 'edit',
+        title: 'Modifica profilo — Ristorandoti',
+        canDeactivate: [unsavedChangesGuard],
+        loadComponent: () => import('./pages/profile-edit/profile-edit').then((m) => m.ProfileEdit),
+      },
+      {
+        path: ':userId',
+        title: 'Profilo — Ristorandoti',
+        loadComponent: () => import('./pages/profile/profile').then((m) => m.Profile),
+      },
+    ],
   },
   {
     path: '**',

@@ -1,9 +1,10 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { afterLoginUrl } from '../../core/guards/auth.guard';
 import { AuthError } from '../../core/models/auth.models';
 import { AuthService } from '../../core/services/auth.service';
 import { GoogleSignInButton } from '../../shared/components/google-sign-in-button/google-sign-in-button';
@@ -16,6 +17,7 @@ import { GoogleSignInButton } from '../../shared/components/google-sign-in-butto
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly form = new FormGroup({
@@ -27,6 +29,9 @@ export class Login {
   protected readonly loading = signal(false);
   protected readonly error = signal<AuthError | null>(null);
   protected readonly showPassword = signal(false);
+
+  /** Da passare alla registrazione, così anche dopo l'iscrizione si torna alla pagina richiesta. */
+  protected readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
   protected hasError(control: 'email' | 'password'): boolean {
     const c = this.form.controls[control];
@@ -49,7 +54,7 @@ export class Login {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => this.router.navigateByUrl('/'),
+        next: () => this.router.navigateByUrl(afterLoginUrl(this.returnUrl)),
         error: (err: AuthError) => this.error.set(err),
       });
   }

@@ -1,9 +1,10 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { afterLoginUrl } from '../../core/guards/auth.guard';
 import { AuthError } from '../../core/models/auth.models';
 import { AuthService } from '../../core/services/auth.service';
 import { GoogleSignInButton } from '../../shared/components/google-sign-in-button/google-sign-in-button';
@@ -19,6 +20,7 @@ type Field = 'firstName' | 'lastName' | 'email' | 'password' | 'confirmPassword'
 export class Register {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   // Limiti allineati a RegisterRequestDto: name ≤ 150, email ≤ 255, password 8–72
@@ -42,6 +44,12 @@ export class Register {
   protected readonly loading = signal(false);
   protected readonly error = signal<AuthError | null>(null);
   protected readonly showPassword = signal(false);
+
+  constructor() {
+    // Arrivando dal login con un'email non registrata, la si ritrova già compilata
+    const email = this.route.snapshot.queryParamMap.get('email');
+    if (email) this.form.controls.email.setValue(email);
+  }
 
   protected hasError(field: Field): boolean {
     const c = this.form.controls[field];
@@ -84,7 +92,7 @@ export class Register {
       )
       .subscribe({
         // Il backend restituisce già il JWT: l'utente è autenticato
-        next: () => this.router.navigateByUrl('/'),
+        next: () => this.router.navigateByUrl(afterLoginUrl(this.route.snapshot.queryParamMap.get('returnUrl'))),
         error: (err: AuthError) => {
           this.error.set(err);
           this.applyServerErrors(err);

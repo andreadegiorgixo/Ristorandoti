@@ -1,8 +1,9 @@
 import { Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { afterLoginUrl } from '../../../core/guards/auth.guard';
 import { AuthError } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { GoogleIdentityService } from '../../../core/services/google-identity.service';
@@ -19,6 +20,7 @@ export class GoogleSignInButton {
   private readonly auth = inject(AuthService);
   private readonly gis = inject(GoogleIdentityService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Testo del pulsante: "Accedi con Google" o "Registrati con Google" */
@@ -77,7 +79,7 @@ export class GoogleSignInButton {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => this.router.navigateByUrl('/'),
+        next: () => this.router.navigateByUrl(afterLoginUrl(this.route.snapshot.queryParamMap.get('returnUrl'))),
         error: (err: AuthError) => this.failed.emit(err),
       });
   }

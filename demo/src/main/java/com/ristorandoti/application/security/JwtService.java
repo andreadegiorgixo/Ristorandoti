@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -24,6 +25,9 @@ import com.ristorandoti.application.entity.User;
  */
 @Service
 public class JwtService {
+
+    /** Claim con l'id numerico dell'utente. */
+    private static final String USER_ID_CLAIM = "uid";
 
     /** Firma i token (bean definito in {@link com.ristorandoti.application.config.JwtConfig}). */
     private final JwtEncoder jwtEncoder;
@@ -77,7 +81,7 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(now.plus(expirationMinutes, ChronoUnit.MINUTES))
                 .subject(user.getEmail())
-                .claim("uid", user.getId())
+                .claim(USER_ID_CLAIM, user.getId())
                 .claim("name", user.getName())
                 .claim("roles", roleNames)
                 .build();
@@ -91,5 +95,17 @@ public class JwtService {
      */
     public long getExpirationSeconds() {
         return expirationMinutes * 60;
+    }
+
+    /**
+     * Estrae l'id dell'utente da un JWT applicativo già validato da Spring Security
+     * (es. ottenuto con {@code @AuthenticationPrincipal Jwt jwt} in un controller).
+     *
+     * @param jwt token dell'utente autenticato
+     * @return l'id dell'utente (claim {@code uid})
+     */
+    public static Long extractUserId(Jwt jwt) {
+        Number uid = jwt.getClaim(USER_ID_CLAIM);
+        return uid.longValue();
     }
 }

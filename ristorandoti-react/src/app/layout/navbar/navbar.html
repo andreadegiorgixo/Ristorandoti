@@ -1,6 +1,6 @@
 <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md">
   <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Navigazione principale">
-    <a routerLink="/" (click)="closeMenu()" class="flex items-center gap-2.5">
+    <a [routerLink]="auth.isAuthenticated() ? '/feed' : '/'" (click)="closeMenu()" class="flex items-center gap-2.5">
       <span class="grid size-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm">
         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
@@ -11,7 +11,7 @@
 
     <!-- Desktop -->
     <div class="hidden items-center gap-1 md:flex">
-      @for (link of links; track link.path) {
+      @for (link of links(); track link.path) {
         <a
           [routerLink]="link.path"
           routerLinkActive="bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
@@ -23,9 +23,10 @@
 
     <div class="hidden items-center gap-3 md:flex">
       @if (auth.isAuthenticated()) {
-        <span class="text-sm text-slate-600">
-          Ciao, <span class="font-semibold text-slate-900">{{ auth.currentUser()?.name }}</span>
-        </span>
+        <a routerLink="/profile" class="flex items-center gap-2 rounded-full py-1 pr-3 pl-1 transition hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-slate-200">
+          <app-avatar [src]="profile.me()?.profilePictureUrl" [name]="auth.currentUser()?.name ?? ''" size="sm" />
+          <span class="max-w-40 truncate text-sm font-semibold text-slate-900">{{ auth.currentUser()?.name }}</span>
+        </a>
         <button type="button" (click)="logout()" class="btn-secondary !py-2">Esci</button>
       } @else {
         <a routerLink="/login" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:text-slate-900">Accedi</a>
@@ -54,7 +55,7 @@
   @if (menuOpen()) {
     <div id="mobile-menu" class="border-t border-slate-200 bg-white px-4 pt-3 pb-5 shadow-md md:hidden">
       <div class="flex flex-col gap-1">
-        @for (link of links; track link.path) {
+        @for (link of links(); track link.path) {
           <a
             [routerLink]="link.path"
             (click)="closeMenu()"
@@ -66,6 +67,13 @@
       </div>
       <div class="mt-4 grid gap-2 border-t border-slate-100 pt-4">
         @if (auth.isAuthenticated()) {
+          <a routerLink="/profile" (click)="closeMenu()" class="flex items-center gap-3 rounded-xl px-2 py-2">
+            <app-avatar [src]="profile.me()?.profilePictureUrl" [name]="auth.currentUser()?.name ?? ''" />
+            <span class="min-w-0">
+              <span class="block truncate font-semibold">{{ auth.currentUser()?.name }}</span>
+              <span class="block text-xs text-slate-500">Vedi il tuo profilo</span>
+            </span>
+          </a>
           <button type="button" (click)="logout()" class="btn-secondary w-full">Esci</button>
         } @else {
           <a routerLink="/login" (click)="closeMenu()" class="btn-secondary w-full">Accedi</a>

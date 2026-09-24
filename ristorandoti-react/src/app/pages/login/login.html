@@ -12,15 +12,21 @@
       <p class="mt-1.5 text-sm text-slate-500">Inserisci le tue credenziali per continuare.</p>
 
       @if (error(); as err) {
-        <div class="mt-6 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+        <div
+          class="mt-6 flex gap-3 rounded-xl border p-4 text-sm"
+          [class]="err.code === 'NOT_REGISTERED' ? 'border-brand-200 bg-brand-50 text-brand-900' : 'border-red-200 bg-red-50 text-red-800'"
+          role="alert"
+        >
           <svg class="mt-0.5 size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
           <div>
             <p class="font-semibold">{{ err.message }}</p>
-            @if (err.code === 'INVALID_CREDENTIALS') {
-              <p class="mt-1">
-                Non sei ancora iscritto?
-                <a routerLink="/register" class="font-semibold underline underline-offset-2">Crea un account</a>
-              </p>
+            @if (err.code === 'NOT_REGISTERED') {
+              <p class="mt-1">Nessun problema: crea il tuo account in meno di un minuto.</p>
+              <a
+                routerLink="/register"
+                [queryParams]="{ email: form.controls.email.value.trim(), returnUrl }"
+                class="btn-primary mt-3 !px-4 !py-2"
+              >Registrati con {{ form.controls.email.value.trim() }}</a>
             }
           </div>
         </div>
@@ -105,7 +111,7 @@
         <p class="text-sm font-semibold text-brand-900">Non hai ancora un account?</p>
         <p class="text-sm text-brand-700">Unisciti gratuitamente alla community.</p>
       </div>
-      <a routerLink="/register" class="btn-primary shrink-0 !py-2.5">Registrati</a>
+      <a routerLink="/register" [queryParams]="{ returnUrl }" class="btn-primary shrink-0 !py-2.5">Registrati</a>
     </div>
   </div>
 </section>

@@ -1,0 +1,276 @@
+@let name = auth.currentUser()?.name ?? '';
+<div class="mx-auto max-w-3xl px-4 pt-6 pb-32 sm:px-6 lg:pt-8">
+  <div class="flex items-center gap-3">
+    <a routerLink="/profile" class="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:text-slate-900" aria-label="Torna al profilo">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+    </a>
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight">Modifica profilo</h1>
+      <p class="text-sm text-slate-500">Un profilo completo ti rende più facile da trovare e da contattare.</p>
+    </div>
+  </div>
+
+  @if (loadError(); as err) {
+    <div class="card mt-6 flex flex-col items-center px-6 py-12 text-center" role="alert">
+      <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+      <a routerLink="/profile" class="btn-secondary mt-4">Torna al profilo</a>
+    </div>
+  } @else if (!ready()) {
+    <div class="card mt-6 h-64 animate-pulse bg-slate-100" aria-hidden="true"></div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate class="mt-6 space-y-5">
+      <!-- Immagini -->
+      <section id="immagini" class="card scroll-mt-24 overflow-hidden" aria-labelledby="img-title">
+        <div class="relative h-28 bg-gradient-to-r from-brand-700 via-brand-500 to-brand-300 sm:h-40">
+          @if (bannerUrl(); as url) {
+            <img [src]="url" alt="Anteprima del banner" class="size-full object-cover" />
+          }
+        </div>
+        <div class="relative z-10 -mt-12 px-5 sm:px-6">
+          <app-avatar [src]="pictureUrl()" [name]="name" size="xl" [ring]="true" />
+        </div>
+
+        <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+          <h2 id="img-title" class="sr-only">Immagini</h2>
+          <div>
+            <span id="picture-label" class="mb-1.5 block text-sm font-semibold text-slate-700">Foto profilo</span>
+            <input #pictureInput id="picture" type="file" [accept]="imageAccept" (change)="onImageSelected('profilePictureUrl', pictureInput)" class="sr-only" aria-labelledby="picture-label" />
+            <div class="flex flex-wrap items-center gap-2">
+              <label for="picture" class="btn-secondary cursor-pointer !py-2" [class.pointer-events-none]="uploading()" [class.opacity-60]="uploading()">
+                @if (uploading() === 'profilePictureUrl') {
+                  <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+                  Caricamento…
+                } @else {
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m17 8-5-5-5 5" /><path d="M12 3v12" /></svg>
+                  {{ value().profilePictureUrl ? 'Cambia' : 'Carica dal dispositivo' }}
+                }
+              </label>
+              @if (value().profilePictureUrl && uploading() !== 'profilePictureUrl') {
+                <button type="button" (click)="clearImage('profilePictureUrl')" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-red-600">Rimuovi</button>
+              }
+            </div>
+            @if (showError(form.controls.profilePictureUrl)) {
+              <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.profilePictureUrl) }}</p>
+            } @else {
+              <p class="mt-1.5 text-xs text-slate-500">Meglio se quadrata. JPG, PNG, GIF o WebP fino a 10 MB.</p>
+            }
+          </div>
+          <div>
+            <span id="banner-label" class="mb-1.5 block text-sm font-semibold text-slate-700">Banner</span>
+            <input #bannerInput id="banner" type="file" [accept]="imageAccept" (change)="onImageSelected('bannerUrl', bannerInput)" class="sr-only" aria-labelledby="banner-label" />
+            <div class="flex flex-wrap items-center gap-2">
+              <label for="banner" class="btn-secondary cursor-pointer !py-2" [class.pointer-events-none]="uploading()" [class.opacity-60]="uploading()">
+                @if (uploading() === 'bannerUrl') {
+                  <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+                  Caricamento…
+                } @else {
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m17 8-5-5-5 5" /><path d="M12 3v12" /></svg>
+                  {{ value().bannerUrl ? 'Cambia' : 'Carica dal dispositivo' }}
+                }
+              </label>
+              @if (value().bannerUrl && uploading() !== 'bannerUrl') {
+                <button type="button" (click)="clearImage('bannerUrl')" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-red-600">Rimuovi</button>
+              }
+            </div>
+            @if (showError(form.controls.bannerUrl)) {
+              <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.bannerUrl) }}</p>
+            } @else {
+              <p class="mt-1.5 text-xs text-slate-500">Orizzontale: la sala, la cucina, il tuo piatto simbolo.</p>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Sommario -->
+      <section class="card p-5 sm:p-6" aria-labelledby="sum-title">
+        <div class="flex items-baseline justify-between gap-3">
+          <label id="sum-title" for="sommario" class="text-lg font-bold">Chi sei, in una riga</label>
+          <span class="text-xs tabular-nums" [class.text-red-600]="sommarioLength() > limits.sommario" [class.text-slate-400]="sommarioLength() <= limits.sommario">
+            {{ sommarioLength() }}/{{ limits.sommario }}
+          </span>
+        </div>
+        <textarea
+          id="sommario"
+          formControlName="sommario"
+          rows="2"
+          placeholder="Es. Executive Chef presso Ristorante Da Mario | Appassionato di cucina mediterranea"
+          class="form-input mt-3 resize-none"
+          [class.form-input-error]="showError(form.controls.sommario)"
+          [attr.aria-invalid]="showError(form.controls.sommario)"
+        ></textarea>
+        @if (showError(form.controls.sommario)) {
+          <p class="mt-1.5 text-xs font-medium text-red-600">{{ errorText(form.controls.sommario) }}</p>
+        }
+        @if (suggestedSommario(); as suggestion) {
+          <button type="button" (click)="useSuggestion(suggestion)" class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100">
+            <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" /></svg>
+            <span class="truncate">Usa: “{{ suggestion }}”</span>
+          </button>
+        }
+      </section>
+
+      <!-- Esperienze -->
+      <section id="esperienze" class="card scroll-mt-24 p-5 sm:p-6" aria-labelledby="exp-title" formArrayName="esperienze">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="exp-title" class="text-lg font-bold">Esperienza</h2>
+          <button type="button" (click)="addExperience()" class="btn-secondary !px-3 !py-2">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Aggiungi
+          </button>
+        </div>
+
+        @if (!esperienze.length) {
+          <p class="mt-3 text-sm text-slate-500">Dove hai lavorato? Ristoranti, hotel, catering, stagioni all’estero: tutto conta.</p>
+        }
+
+        <div class="mt-4 space-y-3">
+          @for (group of esperienze.controls; track group; let i = $index) {
+            <div class="rounded-xl border transition" [class.border-red-300]="group.invalid && group.touched" [class.border-slate-200]="!(group.invalid && group.touched)" [formGroupName]="i">
+              @if (!isOpen(group)) {
+                <div class="flex items-center gap-3 p-3 sm:p-4">
+                  <button type="button" (click)="toggle(group)" class="min-w-0 flex-1 text-left">
+                    <span class="block truncate font-semibold">{{ group.value.ruolo || 'Nuova esperienza' }}</span>
+                    <span class="block truncate text-sm text-slate-600">{{ group.value.azienda }}</span>
+                    <span class="block text-xs text-slate-500">{{ summary(group, 'Presente') }}</span>
+                  </button>
+                  <button type="button" (click)="toggle(group)" class="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Modifica</button>
+                </div>
+              } @else {
+                <div class="grid gap-4 p-4 sm:grid-cols-2">
+                  <div>
+                    <label [for]="'exp-' + i + '-ruolo'" class="mb-1.5 block text-sm font-semibold text-slate-700">Ruolo *</label>
+                    <input [id]="'exp-' + i + '-ruolo'" formControlName="ruolo" placeholder="Es. Sous Chef" class="form-input" [class.form-input-error]="showError(group.controls.ruolo)" [attr.aria-invalid]="showError(group.controls.ruolo)" />
+                    @if (showError(group.controls.ruolo)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.ruolo) }}</p> }
+                  </div>
+                  <div>
+                    <label [for]="'exp-' + i + '-azienda'" class="mb-1.5 block text-sm font-semibold text-slate-700">Ristorante / azienda *</label>
+                    <input [id]="'exp-' + i + '-azienda'" formControlName="azienda" placeholder="Es. Trattoria da Lucia" class="form-input" [class.form-input-error]="showError(group.controls.azienda)" [attr.aria-invalid]="showError(group.controls.azienda)" />
+                    @if (showError(group.controls.azienda)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.azienda) }}</p> }
+                  </div>
+                  <div>
+                    <label [for]="'exp-' + i + '-start'" class="mb-1.5 block text-sm font-semibold text-slate-700">Inizio *</label>
+                    <input [id]="'exp-' + i + '-start'" type="month" formControlName="dataStart" [max]="maxMonth" placeholder="AAAA-MM" class="form-input" [class.form-input-error]="showError(group.controls.dataStart)" [attr.aria-invalid]="showError(group.controls.dataStart)" />
+                    @if (showError(group.controls.dataStart)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.dataStart) }}</p> }
+                  </div>
+                  <div>
+                    <label [for]="'exp-' + i + '-end'" class="mb-1.5 block text-sm font-semibold text-slate-700">Fine</label>
+                    <input [id]="'exp-' + i + '-end'" type="month" formControlName="dataEnd" [max]="maxMonth" placeholder="AAAA-MM" class="form-input disabled:bg-slate-50 disabled:text-slate-400" [class.form-input-error]="showError(group.controls.dataEnd) || periodError(group)" [attr.aria-invalid]="showError(group.controls.dataEnd) || periodError(group)" />
+                    @if (showError(group.controls.dataEnd)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.dataEnd) }}</p> }
+                    @else if (periodError(group)) { <p class="mt-1 text-xs font-medium text-red-600">La fine non può precedere l’inizio.</p> }
+                    <label class="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                      <input type="checkbox" formControlName="current" (change)="onCurrentChange(group)" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                      Lavoro qui attualmente
+                    </label>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label [for]="'exp-' + i + '-desc'" class="mb-1.5 block text-sm font-semibold text-slate-700">Descrizione <span class="font-normal text-slate-400">(facoltativa)</span></label>
+                    <textarea [id]="'exp-' + i + '-desc'" formControlName="descrizione" rows="3" placeholder="Di cosa ti occupavi? Tipo di cucina, coperti, brigata…" class="form-input resize-y" [class.form-input-error]="showError(group.controls.descrizione)"></textarea>
+                    @if (showError(group.controls.descrizione)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.descrizione) }}</p> }
+                  </div>
+                  <div class="flex items-center justify-between sm:col-span-2">
+                    <button type="button" (click)="removeAt(esperienze, i)" class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50">
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                      Rimuovi
+                    </button>
+                    <button type="button" (click)="toggle(group)" class="btn-secondary !px-4 !py-2">Fatto</button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Formazione -->
+      <section id="istruzione" class="card scroll-mt-24 p-5 sm:p-6" aria-labelledby="edu-title" formArrayName="istruzione">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="edu-title" class="text-lg font-bold">Formazione</h2>
+          <button type="button" (click)="addEducation()" class="btn-secondary !px-3 !py-2">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            Aggiungi
+          </button>
+        </div>
+
+        @if (!istruzione.length) {
+          <p class="mt-3 text-sm text-slate-500">Istituto alberghiero, accademie di cucina, corsi di pasticceria o sommelier.</p>
+        }
+
+        <div class="mt-4 space-y-3">
+          @for (group of istruzione.controls; track group; let i = $index) {
+            <div class="rounded-xl border transition" [class.border-red-300]="group.invalid && group.touched" [class.border-slate-200]="!(group.invalid && group.touched)" [formGroupName]="i">
+              @if (!isOpen(group)) {
+                <div class="flex items-center gap-3 p-3 sm:p-4">
+                  <button type="button" (click)="toggle(group)" class="min-w-0 flex-1 text-left">
+                    <span class="block truncate font-semibold">{{ group.value.istituto || 'Nuovo percorso' }}</span>
+                    <span class="block truncate text-sm text-slate-600">{{ group.value.titoloStudio }}</span>
+                    <span class="block text-xs text-slate-500">{{ summary(group, 'In corso') }}</span>
+                  </button>
+                  <button type="button" (click)="toggle(group)" class="rounded-lg px-2.5 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Modifica</button>
+                </div>
+              } @else {
+                <div class="grid gap-4 p-4 sm:grid-cols-2">
+                  <div>
+                    <label [for]="'edu-' + i + '-istituto'" class="mb-1.5 block text-sm font-semibold text-slate-700">Istituto *</label>
+                    <input [id]="'edu-' + i + '-istituto'" formControlName="istituto" placeholder="Es. ALMA – Scuola Internazionale di Cucina" class="form-input" [class.form-input-error]="showError(group.controls.istituto)" [attr.aria-invalid]="showError(group.controls.istituto)" />
+                    @if (showError(group.controls.istituto)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.istituto) }}</p> }
+                  </div>
+                  <div>
+                    <label [for]="'edu-' + i + '-titolo'" class="mb-1.5 block text-sm font-semibold text-slate-700">Titolo o corso *</label>
+                    <input [id]="'edu-' + i + '-titolo'" formControlName="titoloStudio" placeholder="Es. Corso Superiore di Cucina Italiana" class="form-input" [class.form-input-error]="showError(group.controls.titoloStudio)" [attr.aria-invalid]="showError(group.controls.titoloStudio)" />
+                    @if (showError(group.controls.titoloStudio)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.titoloStudio) }}</p> }
+                  </div>
+                  <div>
+                    <label [for]="'edu-' + i + '-start'" class="mb-1.5 block text-sm font-semibold text-slate-700">Inizio *</label>
+                    <input [id]="'edu-' + i + '-start'" type="month" formControlName="dataStart" [max]="maxMonth" placeholder="AAAA-MM" class="form-input" [class.form-input-error]="showError(group.controls.dataStart)" [attr.aria-invalid]="showError(group.controls.dataStart)" />
+                    @if (showError(group.controls.dataStart)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.dataStart) }}</p> }
+                  </div>
+                  <div>
+                    <label [for]="'edu-' + i + '-end'" class="mb-1.5 block text-sm font-semibold text-slate-700">Fine</label>
+                    <input [id]="'edu-' + i + '-end'" type="month" formControlName="dataEnd" [max]="maxMonth" placeholder="AAAA-MM" class="form-input disabled:bg-slate-50 disabled:text-slate-400" [class.form-input-error]="showError(group.controls.dataEnd) || periodError(group)" [attr.aria-invalid]="showError(group.controls.dataEnd) || periodError(group)" />
+                    @if (showError(group.controls.dataEnd)) { <p class="mt-1 text-xs font-medium text-red-600">{{ errorText(group.controls.dataEnd) }}</p> }
+                    @else if (periodError(group)) { <p class="mt-1 text-xs font-medium text-red-600">La fine non può precedere l’inizio.</p> }
+                    <label class="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                      <input type="checkbox" formControlName="current" (change)="onCurrentChange(group)" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                      In corso
+                    </label>
+                  </div>
+                  <div class="flex items-center justify-between sm:col-span-2">
+                    <button type="button" (click)="removeAt(istruzione, i)" class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50">
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                      Rimuovi
+                    </button>
+                    <button type="button" (click)="toggle(group)" class="btn-secondary !px-4 !py-2">Fatto</button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Barra di salvataggio sempre visibile -->
+      <div class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/90 backdrop-blur-md">
+        <div class="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
+          <p class="min-w-0 flex-1 truncate text-sm" role="status">
+            @if (saveError(); as msg) {
+              <span class="font-medium text-red-600">{{ msg }}</span>
+            } @else if (form.dirty) {
+              <span class="text-slate-600">Hai modifiche non salvate</span>
+            } @else {
+              <span class="text-slate-400">Nessuna modifica</span>
+            }
+          </p>
+          <a routerLink="/profile" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Annulla</a>
+          <button type="submit" class="btn-primary !py-2.5" [disabled]="saving() || !!uploading() || !form.dirty">
+            @if (saving()) {
+              <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+              Salvataggio…
+            } @else {
+              Salva modifiche
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+  }
+</div>

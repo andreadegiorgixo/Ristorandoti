@@ -1,0 +1,119 @@
+@let me = profile.me();
+@let user = auth.currentUser();
+@let completion = profile.completion();
+<div class="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[17rem_1fr] lg:py-8">
+  <!-- Colonna profilo (desktop) -->
+  <aside class="hidden lg:block">
+    <div class="sticky top-24 space-y-4">
+      <div class="card overflow-hidden">
+        <div class="h-16 bg-gradient-to-r from-brand-600 to-brand-400">
+          @if (me?.bannerUrl) {
+            <img [src]="me!.bannerUrl" alt="" class="size-full object-cover" />
+          }
+        </div>
+        <div class="relative z-10 -mt-8 flex flex-col items-center px-4 pb-5 text-center">
+          <a routerLink="/profile" aria-label="Il tuo profilo">
+            <app-avatar [src]="me?.profilePictureUrl" [name]="user?.name ?? ''" size="lg" [ring]="true" />
+          </a>
+          <a routerLink="/profile" class="mt-2 font-bold hover:underline">{{ user?.name }}</a>
+          @if (me?.sommario) {
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">{{ me!.sommario }}</p>
+          } @else {
+            <a routerLink="/profile/edit" class="mt-1 text-xs font-semibold text-brand-700 hover:underline">+ Aggiungi chi sei in una riga</a>
+          }
+        </div>
+
+        @if (me && completion.percent < 100) {
+          <div class="border-t border-slate-100 p-4">
+            <div class="flex items-center justify-between text-xs font-semibold">
+              <span class="text-slate-600">Profilo completo al</span>
+              <span class="text-brand-700">{{ completion.percent }}%</span>
+            </div>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-brand-500 transition-all" [style.width.%]="completion.percent"></div>
+            </div>
+            @if (nextStep(); as step) {
+              <a routerLink="/profile/edit" class="mt-3 flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
+                Aggiungi: {{ step.label }}
+                <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+              </a>
+            }
+          </div>
+        }
+      </div>
+
+      <p class="px-2 text-xs leading-relaxed text-slate-400">
+        Suggerimento: premi <kbd class="rounded border border-slate-200 bg-white px-1 font-sans">Ctrl</kbd> +
+        <kbd class="rounded border border-slate-200 bg-white px-1 font-sans">Invio</kbd> per pubblicare al volo.
+      </p>
+    </div>
+  </aside>
+
+  <!-- Feed -->
+  <div class="min-w-0 space-y-4">
+    <!-- Invito a completare il profilo (mobile) -->
+    @if (me && completion.percent < 100) {
+      <a routerLink="/profile/edit" class="card flex items-center gap-3 p-3 lg:hidden">
+        <span class="grid size-10 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">{{ completion.percent }}%</span>
+        <span class="min-w-0 flex-1 text-sm">
+          <span class="block font-semibold">Completa il tuo profilo</span>
+          <span class="block truncate text-xs text-slate-500">Aggiungi {{ nextStep()?.label?.toLowerCase() }} per farti trovare</span>
+        </span>
+        <svg class="size-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+      </a>
+    }
+
+    <app-post-composer (published)="onPublished($event)" />
+
+    <div class="flex items-center gap-3 pt-1">
+      <span class="h-px flex-1 bg-slate-200"></span>
+      <button type="button" (click)="refresh()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800">
+        <svg class="size-3.5" [class.animate-spin]="pager.loading()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
+        Più recenti
+      </button>
+      <span class="h-px flex-1 bg-slate-200"></span>
+    </div>
+
+    @if (pager.initialLoading()) {
+      <app-post-skeleton />
+      <app-post-skeleton />
+      <app-post-skeleton />
+    }
+
+    @for (post of pager.posts(); track post.id) {
+      <app-post-card [post]="post" (postChange)="pager.replace($event)" />
+    }
+
+    @if (pager.empty()) {
+      <div class="card flex flex-col items-center px-6 py-12 text-center">
+        <span class="grid size-14 place-items-center rounded-2xl bg-brand-50 text-brand-600">
+          <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
+        </span>
+        <h2 class="mt-4 font-bold">Il feed è ancora vuoto</h2>
+        <p class="mt-1 max-w-xs text-sm text-slate-500">Rompi il ghiaccio: condividi il piatto del giorno o racconta com’è nato il tuo locale.</p>
+      </div>
+    }
+
+    @if (pager.error(); as err) {
+      <div class="card flex flex-col items-center gap-3 px-6 py-8 text-center" role="alert">
+        <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+        <button type="button" (click)="pager.loadMore()" class="btn-secondary !py-2">Riprova</button>
+      </div>
+    }
+
+    @if (pager.loading() && !pager.initialLoading()) {
+      <app-post-skeleton />
+    }
+
+    <!-- Sentinella: ricreata dopo ogni pagina, così riparte il controllo di visibilità -->
+    @if (!pager.loading() && !pager.last() && !pager.error() && pager.posts().length) {
+      <div appInfiniteScroll (reached)="pager.loadMore()" class="flex justify-center py-2">
+        <button type="button" (click)="pager.loadMore()" class="btn-secondary !py-2">Carica altri post</button>
+      </div>
+    }
+
+    @if (pager.last() && pager.posts().length > 3) {
+      <p class="py-6 text-center text-sm text-slate-400">Hai visto tutto, per ora. Torna più tardi! 🍝</p>
+    }
+  </div>
+</div>

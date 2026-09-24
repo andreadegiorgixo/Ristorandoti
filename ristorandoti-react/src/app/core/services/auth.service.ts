@@ -106,6 +106,9 @@ export class AuthService {
         };
       case 401:
         return { code: 'INVALID_CREDENTIALS', message: message ?? 'Email o password non corretti.' };
+      // Solo su /login: l'email non corrisponde a nessun account
+      case 404:
+        return { code: 'NOT_REGISTERED', message: message ?? 'Nessun account registrato con questa email.' };
       case 409:
         return { code: 'ALREADY_EXISTS', message: message ?? 'Esiste già un account con questa email.' };
       case 400:

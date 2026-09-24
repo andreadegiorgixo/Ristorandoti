@@ -41,7 +41,13 @@ export interface ApiErrorResponse {
 }
 
 /** Errore normalizzato esposto ai componenti */
-export type AuthErrorCode = 'INVALID_CREDENTIALS' | 'ALREADY_EXISTS' | 'VALIDATION' | 'SERVER_UNREACHABLE' | 'UNKNOWN';
+export type AuthErrorCode =
+  | 'INVALID_CREDENTIALS'
+  | 'NOT_REGISTERED'
+  | 'ALREADY_EXISTS'
+  | 'VALIDATION'
+  | 'SERVER_UNREACHABLE'
+  | 'UNKNOWN';
 
 export interface AuthError {
   code: AuthErrorCode;
