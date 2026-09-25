@@ -21,8 +21,8 @@ import lombok.ToString;
  * <ul>
  *     <li>campo {@code null} o assente → valore attuale invariato;</li>
  *     <li>stringa vuota ({@code ""}) → il campo viene svuotato (es. rimuovere il banner);</li>
- *     <li>{@code esperienze}/{@code istruzione} valorizzate → SOSTITUISCONO l'intera lista
- *         (una lista vuota {@code []} cancella tutti gli elementi).</li>
+ *     <li>{@code esperienze}/{@code istruzione}/{@code lingue} valorizzate → SOSTITUISCONO
+ *         l'intera lista (una lista vuota {@code []} cancella tutti gli elementi).</li>
  * </ul>
  */
 @Getter
@@ -51,4 +51,8 @@ public class ProfileUpdateRequestDto {
     @Valid
     @Size(max = 50, message = "Puoi inserire al massimo 50 percorsi di studio")
     private List<EducationRequestDto> istruzione;
+
+    @Valid
+    @Size(max = 50, message = "Puoi inserire al massimo 50 lingue")
+    private List<LanguageRequestDto> lingue;
 }

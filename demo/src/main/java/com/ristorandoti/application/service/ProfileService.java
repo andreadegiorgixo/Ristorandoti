@@ -103,6 +103,9 @@ public class ProfileService {
         if (request.getIstruzione() != null) {
             profile.replaceIstruzione(profileMapper.toEducations(request.getIstruzione()));
         }
+        if (request.getLingue() != null) {
+            profile.replaceLingue(profileMapper.toLanguages(request.getLingue()));
+        }
 
         // flush: le nuove esperienze/istruzione ricevono l'id prima di essere mappate nel DTO
         Profile saved = profileRepository.saveAndFlush(profile);

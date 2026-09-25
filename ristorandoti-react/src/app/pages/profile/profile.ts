@@ -12,6 +12,7 @@ import { ProfileService } from '../../core/services/profile.service';
 import { ReviewService } from '../../core/services/review.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
+import { LanguageFormModal } from '../../shared/components/language-form-modal/language-form-modal';
 import { PostCard } from '../../shared/components/post-card/post-card';
 import { PostSkeleton } from '../../shared/components/post-card/post-skeleton';
 import { PostComposer } from '../../shared/components/post-composer/post-composer';
@@ -19,6 +20,7 @@ import { ReviewListModal } from '../../shared/components/review-list-modal/revie
 import { WriteReviewModal } from '../../shared/components/write-review-modal/write-review-modal';
 import { InfiniteScrollDirective } from '../../shared/directives/infinite-scroll.directive';
 import { formatPeriod } from '../../shared/utils/dates';
+import { languageLevelLabel } from '../../shared/utils/language-levels';
 import { PostPager } from '../../shared/utils/post-pager';
 
 type Tab = 'percorso' | 'post';
@@ -29,7 +31,7 @@ type Tab = 'percorso' | 'post';
  */
 @Component({
   selector: 'app-profile',
-  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, ReviewListModal, WriteReviewModal, InfiniteScrollDirective],
+  imports: [RouterLink, Avatar, PostCard, PostSkeleton, PostComposer, ReviewListModal, WriteReviewModal, LanguageFormModal, InfiniteScrollDirective],
   templateUrl: './profile.html',
 })
 export class Profile implements OnDestroy {
@@ -57,9 +59,12 @@ export class Profile implements OnDestroy {
   protected readonly reviewsOpen = signal(false);
   protected readonly eligibility = signal<ReviewEligibility | null>(null);
   protected readonly writeReviewOpen = signal(false);
+  protected readonly addLanguageOpen = signal(false);
+  protected readonly removingLanguageId = signal<number | null>(null);
 
   protected readonly pager = new PostPager((page) => this.postService.getByUser(this.targetId(), page));
   protected readonly formatPeriod = formatPeriod;
+  protected readonly languageLevelLabel = languageLevelLabel;
 
   constructor() {
     effect(() => {
@@ -85,6 +90,7 @@ export class Profile implements OnDestroy {
     this.reviewsOpen.set(false);
     this.eligibility.set(null);
     this.writeReviewOpen.set(false);
+    this.addLanguageOpen.set(false);
     this.pager.reset();
 
     const isOwn = this.isOwn();
@@ -142,6 +148,35 @@ export class Profile implements OnDestroy {
     this.eligibility.update((e) => (e ? { ...e, alreadyReviewed: false, myReview: null } : e));
     this.otherProfile.update((p) => (p ? { ...p, recensioniCount: Math.max(0, p.recensioniCount - 1) } : p));
     this.writeReviewOpen.set(false);
+  }
+
+  protected openAddLanguage(): void {
+    this.addLanguageOpen.set(true);
+  }
+
+  protected closeAddLanguage(): void {
+    this.addLanguageOpen.set(false);
+  }
+
+  protected onLanguageSaved(): void {
+    this.addLanguageOpen.set(false);
+  }
+
+  /** Rimuove una lingua sostituendo l'intera lista senza di essa (stesso pattern del salvataggio). */
+  protected removeLanguage(id: number): void {
+    if (this.removingLanguageId() !== null) return;
+
+    const lingue = this.data()?.lingue ?? [];
+    this.removingLanguageId.set(id);
+    this.profileService
+      .updateMe({ lingue: lingue.filter((l) => l.id !== id).map(({ lingua, livelloScritto, livelloParlato }) => ({ lingua, livelloScritto, livelloParlato })) })
+      .subscribe({
+        next: () => this.removingLanguageId.set(null),
+        error: (err: ApiError) => {
+          this.removingLanguageId.set(null);
+          this.toast.error(err.message);
+        },
+      });
   }
 
   /**

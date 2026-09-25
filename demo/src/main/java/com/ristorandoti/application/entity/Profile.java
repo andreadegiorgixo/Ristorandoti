@@ -43,7 +43,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"user", "esperienze", "istruzione"}) // evita caricamenti lazy e cicli nei log
+@ToString(exclude = {"user", "esperienze", "istruzione", "lingue"}) // evita caricamenti lazy e cicli nei log
 public class Profile {
 
     /** Chiave primaria, generata dal database (colonna IDENTITY su Oracle). */
@@ -81,6 +81,12 @@ public class Profile {
     @Builder.Default
     private List<Education> istruzione = new ArrayList<>();
 
+    /** Lingue conosciute. */
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("lingua ASC")
+    @Builder.Default
+    private List<Language> lingue = new ArrayList<>();
+
     /**
      * Sostituisce tutte le esperienze mantenendo coerenti entrambi i lati della relazione.
      * Si modifica la lista esistente (e non la si riassegna) perché Hibernate traccia
@@ -103,5 +109,16 @@ public class Profile {
         istruzione.clear();
         nuove.forEach(education -> education.setProfile(this));
         istruzione.addAll(nuove);
+    }
+
+    /**
+     * Sostituisce tutte le lingue conosciute (stessa logica di {@link #replaceEsperienze}).
+     *
+     * @param nuove nuove lingue, non ancora collegate a nessun profilo
+     */
+    public void replaceLingue(List<Language> nuove) {
+        lingue.clear();
+        nuove.forEach(language -> language.setProfile(this));
+        lingue.addAll(nuove);
     }
 }

@@ -23,6 +23,17 @@ export interface Education {
   dataEnd: string | null;
 }
 
+/** Livello di conoscenza di una lingua (LanguageLevel), da base a madrelingua. */
+export type LanguageLevel = 'BASE' | 'INTERMEDIO' | 'CONOSCENZA_PROFESSIONALE' | 'MADRELINGUA';
+
+/** Lingua conosciuta (LanguageDto), con livello separato per scritto e parlato. */
+export interface Language {
+  id: number;
+  lingua: string;
+  livelloScritto: LanguageLevel;
+  livelloParlato: LanguageLevel;
+}
+
 /** Risposta di GET /api/profiles/me e /api/profiles/{userId} (ProfileDto) */
 export interface Profile {
   id: number;
@@ -33,6 +44,8 @@ export interface Profile {
   sommario: string | null;
   esperienze: Experience[];
   istruzione: Education[];
+  /** Lingue conosciute, in ordine alfabetico. */
+  lingue: Language[];
   followersCount: number;
   followingCount: number;
   /** true se l'utente loggato segue questo profilo (sempre false sul proprio). */
@@ -44,6 +57,7 @@ export interface Profile {
 
 export type ExperienceRequest = Omit<Experience, 'id' | 'aziendaLogoUrl'>;
 export type EducationRequest = Omit<Education, 'id'>;
+export type LanguageRequest = Omit<Language, 'id'>;
 
 /**
  * Body di PUT /api/profiles/me (ProfileUpdateRequestDto).
@@ -55,4 +69,5 @@ export interface ProfileUpdateRequest {
   sommario?: string;
   esperienze?: ExperienceRequest[];
   istruzione?: EducationRequest[];
+  lingue?: LanguageRequest[];
 }

@@ -43,6 +43,9 @@ public class ProfileDto {
     /** Percorsi di studio, dal più recente. */
     private List<EducationDto> istruzione;
 
+    /** Lingue conosciute, in ordine alfabetico. */
+    private List<LanguageDto> lingue;
+
     /** Numero di persone che seguono questo utente. */
     private long followersCount;
 

@@ -1,0 +1,101 @@
+<div
+  class="fixed inset-0 z-50 grid place-items-end bg-slate-900/50 p-0 backdrop-blur-sm sm:place-items-center sm:p-4"
+  (click)="close()"
+>
+  <div
+    class="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Aggiungi una lingua"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
+      <h2 class="text-lg font-bold">Aggiungi una lingua</h2>
+      <button
+        type="button"
+        (click)="close()"
+        [disabled]="saving()"
+        class="grid size-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-60"
+        aria-label="Chiudi"
+      >
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+      </button>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="min-h-0 flex-1 overflow-y-auto px-5 py-4" novalidate>
+      @if (error(); as err) {
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ err.message }}</div>
+      }
+
+      <div class="space-y-4">
+        <div class="relative">
+          <label for="language-nome" class="mb-1.5 block text-sm font-semibold text-slate-700">Lingua*</label>
+          <input
+            id="language-nome"
+            type="text"
+            formControlName="lingua"
+            (input)="onLinguaInput($any($event.target).value)"
+            (focus)="onLinguaInput(form.controls.lingua.value)"
+            (blur)="suggestionsOpen.set(false)"
+            autocomplete="off"
+            placeholder="Cerca una lingua…"
+            class="form-input"
+          />
+          @if (suggestionsOpen() && suggestions().length) {
+            <ul class="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+              @for (lingua of suggestions(); track lingua) {
+                <li>
+                  <button
+                    type="button"
+                    (mousedown)="selectLanguage(lingua)"
+                    class="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700"
+                  >
+                    {{ lingua }}
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else if (suggestionsOpen() && form.controls.lingua.value.trim()) {
+            <div class="absolute inset-x-0 top-full z-10 mt-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 shadow-lg">
+              Nessuna lingua trovata
+            </div>
+          }
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label for="language-scritto" class="mb-1.5 block text-sm font-semibold text-slate-700">Livello scritto*</label>
+            <select id="language-scritto" formControlName="livelloScritto" class="form-input">
+              <option value="" disabled>Seleziona…</option>
+              @for (level of levels; track level.value) {
+                <option [value]="level.value">{{ level.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label for="language-parlato" class="mb-1.5 block text-sm font-semibold text-slate-700">Livello parlato*</label>
+            <select id="language-parlato" formControlName="livelloParlato" class="form-input">
+              <option value="" disabled>Seleziona…</option>
+              @for (level of levels; track level.value) {
+                <option [value]="level.value">{{ level.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button type="button" (click)="close()" [disabled]="saving()" class="btn-secondary !py-2.5">Annulla</button>
+        <button type="submit" [disabled]="!canSave()" class="btn-primary !py-2.5 disabled:opacity-60">
+          @if (saving()) {
+            <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+            Salvataggio…
+          } @else {
+            Aggiungi
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -9,10 +9,13 @@ import com.ristorandoti.application.dto.EducationDto;
 import com.ristorandoti.application.dto.EducationRequestDto;
 import com.ristorandoti.application.dto.ExperienceDto;
 import com.ristorandoti.application.dto.ExperienceRequestDto;
+import com.ristorandoti.application.dto.LanguageDto;
+import com.ristorandoti.application.dto.LanguageRequestDto;
 import com.ristorandoti.application.dto.ProfileDto;
 import com.ristorandoti.application.entity.Azienda;
 import com.ristorandoti.application.entity.Education;
 import com.ristorandoti.application.entity.Experience;
+import com.ristorandoti.application.entity.Language;
 import com.ristorandoti.application.entity.Profile;
 import com.ristorandoti.application.repository.AziendaRepository;
 
@@ -59,6 +62,9 @@ public class ProfileMapper {
                 .istruzione(profile.getIstruzione().stream()
                         .sorted(Comparator.comparing(Education::getDataStart).reversed())
                         .map(this::toDto).toList())
+                .lingue(profile.getLingue().stream()
+                        .sorted(Comparator.comparing(Language::getLingua))
+                        .map(this::toDto).toList())
                 .followersCount(followersCount)
                 .followingCount(followingCount)
                 .followedByMe(followedByMe)
@@ -88,6 +94,15 @@ public class ProfileMapper {
                 .titoloStudio(education.getTitoloStudio())
                 .dataStart(education.getDataStart())
                 .dataEnd(education.getDataEnd())
+                .build();
+    }
+
+    public LanguageDto toDto(Language language) {
+        return LanguageDto.builder()
+                .id(language.getId())
+                .lingua(language.getLingua())
+                .livelloScritto(language.getLivelloScritto())
+                .livelloParlato(language.getLivelloParlato())
                 .build();
     }
 
@@ -132,6 +147,23 @@ public class ProfileMapper {
                         .titoloStudio(dto.getTitoloStudio().trim())
                         .dataStart(dto.getDataStart())
                         .dataEnd(dto.getDataEnd())
+                        .build())
+                .toList();
+    }
+
+    /**
+     * Converte le lingue ricevute in nuove entità, non ancora collegate al profilo
+     * (lo fa {@link Profile#replaceLingue}).
+     *
+     * @param dtos lingue già validate
+     * @return nuove entità {@link Language}
+     */
+    public List<Language> toLanguages(List<LanguageRequestDto> dtos) {
+        return dtos.stream()
+                .map(dto -> Language.builder()
+                        .lingua(dto.getLingua().trim())
+                        .livelloScritto(dto.getLivelloScritto())
+                        .livelloParlato(dto.getLivelloParlato())
                         .build())
                 .toList();
     }
