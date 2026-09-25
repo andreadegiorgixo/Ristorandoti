@@ -21,7 +21,7 @@
     </div>
 
     <div class="space-y-4">
-      @if (a.gestibileDaMe) {
+      @if (puoiPubblicare()) {
         <app-post-composer [azienda]="a" (published)="pager.prepend($event)" />
       }
 

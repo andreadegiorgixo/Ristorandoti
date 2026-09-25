@@ -93,21 +93,25 @@ public class AziendaMapper {
     }
 
     /**
-     * Come {@link #toDto(Azienda)}, arricchito con le statistiche di follow e con {@code gestibileDaMe}.
-     * Usato solo dalla lettura della singola azienda ({@code GET /api/aziende/{id}}): le liste
-     * (elenco generale, elenco per proprietario, ricerca) non ne hanno bisogno.
+     * Come {@link #toDto(Azienda)}, arricchito con le statistiche di follow, {@code gestibileDaMe}
+     * e {@code puoiVedereDashboard}. Usato solo dalla lettura della singola azienda
+     * ({@code GET /api/aziende/{id}}): le liste (elenco generale, elenco per proprietario, ricerca)
+     * non ne hanno bisogno.
      *
-     * @param azienda        azienda con proprietario già caricato
-     * @param followersCount numero di follower della pagina aziendale
-     * @param followedByMe   se l'utente che fa la richiesta segue questa pagina
-     * @param gestibileDaMe  se l'utente che fa la richiesta è proprietario o persona autorizzata
+     * @param azienda             azienda con proprietario già caricato
+     * @param followersCount      numero di follower della pagina aziendale
+     * @param followedByMe        se l'utente che fa la richiesta segue questa pagina
+     * @param gestibileDaMe       se l'utente che fa la richiesta è proprietario o persona autorizzata (deprecato)
+     * @param puoiVedereDashboard se l'utente che fa la richiesta ha almeno una capability sulla Dashboard
      * @return il DTO da restituire al client
      */
-    public AziendaDto toDto(Azienda azienda, long followersCount, boolean followedByMe, boolean gestibileDaMe) {
+    public AziendaDto toDto(Azienda azienda, long followersCount, boolean followedByMe, boolean gestibileDaMe,
+                            boolean puoiVedereDashboard) {
         AziendaDto dto = toDto(azienda);
         dto.setFollowersCount(followersCount);
         dto.setFollowedByMe(followedByMe);
         dto.setGestibileDaMe(gestibileDaMe);
+        dto.setPuoiVedereDashboard(puoiVedereDashboard);
         return dto;
     }
 

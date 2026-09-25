@@ -21,6 +21,7 @@ import com.ristorandoti.application.dto.AziendaDto;
 import com.ristorandoti.application.dto.AziendaPersonaDto;
 import com.ristorandoti.application.dto.AziendaRequestDto;
 import com.ristorandoti.application.dto.PageResponseDto;
+import com.ristorandoti.application.dto.PanoramicaRequestDto;
 import com.ristorandoti.application.security.JwtService;
 import com.ristorandoti.application.service.AziendaService;
 
@@ -92,10 +93,11 @@ public class AziendaController {
      * @return {@code 200 OK} con una pagina delle aziende corrispondenti, in ordine alfabetico
      */
     @GetMapping("/ricerca")
-    public ResponseEntity<PageResponseDto<AziendaDto>> search(@RequestParam(name = "q", defaultValue = "") String q,
+    public ResponseEntity<PageResponseDto<AziendaDto>> search(@AuthenticationPrincipal Jwt jwt,
+                                                               @RequestParam(name = "q", defaultValue = "") String q,
                                                                @RequestParam(defaultValue = "0") int page,
                                                                @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size) {
-        return ResponseEntity.ok(aziendaService.search(q, page, size));
+        return ResponseEntity.ok(aziendaService.search(q, JwtService.extractUserId(jwt), page, size));
     }
 
     /**
@@ -108,6 +110,21 @@ public class AziendaController {
     public ResponseEntity<AziendaDto> update(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id,
                                              @Valid @RequestBody AziendaRequestDto request) {
         return ResponseEntity.ok(aziendaService.update(id, JwtService.extractUserId(jwt), request));
+    }
+
+    /**
+     * Aggiorna il testo della sezione Panoramica, mostrata nella vista pubblica tra i dati della
+     * pagina e i post.
+     *
+     * @param id      id dell'azienda
+     * @param request nuovo testo, già validato
+     * @return {@code 200 OK} con l'azienda aggiornata, {@code 403} se l'utente autenticato non ha
+     *         {@code MANAGE_OVERVIEW}, {@code 404} se l'azienda non esiste
+     */
+    @PutMapping("/{id}/panoramica")
+    public ResponseEntity<AziendaDto> updatePanoramica(@AuthenticationPrincipal Jwt jwt, @PathVariable Long id,
+                                                        @Valid @RequestBody PanoramicaRequestDto request) {
+        return ResponseEntity.ok(aziendaService.updatePanoramica(id, JwtService.extractUserId(jwt), request));
     }
 
     /**

@@ -1,0 +1,41 @@
+@let a = data();
+<section class="card p-5 sm:p-6" aria-labelledby="impostazioni-title">
+  <div class="flex items-center justify-between gap-3">
+    <h1 id="impostazioni-title" class="text-lg font-bold">Impostazioni pagina</h1>
+    @if (!puoiModificare()) {
+      <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold tracking-wide text-slate-500 uppercase">Sola lettura</span>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="mt-4 space-y-3" aria-hidden="true">
+      <div class="h-4 w-40 animate-pulse rounded bg-slate-100"></div>
+      <div class="h-4 w-64 animate-pulse rounded bg-slate-100"></div>
+    </div>
+  } @else if (error(); as err) {
+    <div class="mt-4 flex flex-col items-start gap-2">
+      <p class="text-sm text-slate-600">{{ err.message }}</p>
+      <button type="button" (click)="retry()" class="btn-secondary">Riprova</button>
+    </div>
+  } @else if (a) {
+    <div class="mt-4 flex items-center gap-4">
+      @if (a.fotoProfiloUrl) {
+        <img [src]="a.fotoProfiloUrl" alt="Logo di {{ a.nome }}" class="size-16 rounded-2xl bg-slate-100 object-cover" />
+      }
+      <div>
+        <p class="font-semibold text-slate-900">{{ a.nome }}</p>
+        <p class="text-sm text-slate-500">Nome, logo, copertina e dati di contatto della pagina.</p>
+      </div>
+    </div>
+
+    @if (puoiModificare()) {
+      <button type="button" (click)="editOpen.set(true)" class="btn-secondary mt-5">Modifica dati pagina</button>
+    } @else {
+      <p class="mt-5 text-sm text-slate-500">Solo il proprietario o un Admin possono modificare i dati della pagina.</p>
+    }
+
+    @if (editOpen()) {
+      <app-azienda-form-modal [azienda]="a" (saved)="onSaved($event)" (closed)="editOpen.set(false)" />
+    }
+  }
+</section>

@@ -1,5 +1,8 @@
 package com.ristorandoti.application.service;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ public class ProfileService {
     private final FollowRepository followRepository;
     private final ReviewRepository reviewRepository;
     private final ProfileMapper profileMapper;
+    private final AziendaPermissionService aziendaPermissionService;
 
     /**
      * Crea il profilo vuoto di un utente appena registrato. Invocato da {@link AuthService}
@@ -80,6 +84,9 @@ public class ProfileService {
     @Transactional
     public ProfileDto updateMyProfile(Long userId, ProfileUpdateRequestDto request) {
         Profile profile = findByUserId(userId);
+        Set<Long> aziendeConRapportoAttivoPrima = request.getEsperienze() != null
+                ? aziendeConRapportoAttivo(profile)
+                : Set.of();
 
         if (request.getProfilePictureUrl() != null) {
             profile.setProfilePictureUrl(blankToNull(request.getProfilePictureUrl()));
@@ -99,6 +106,19 @@ public class ProfileService {
 
         // flush: le nuove esperienze/istruzione ricevono l'id prima di essere mappate nel DTO
         Profile saved = profileRepository.saveAndFlush(profile);
+        if (request.getEsperienze() != null) {
+            Set<Long> aziendeConRapportoAttivoDopo = aziendeConRapportoAttivo(saved);
+            for (Long aziendaId : aziendeConRapportoAttivoPrima) {
+                if (!aziendeConRapportoAttivoDopo.contains(aziendaId)) {
+                    // Il rapporto di lavoro con questa azienda non risulta più "in corso" (esperienza
+                    // rimossa o data_end valorizzata): chiude d'ufficio eventuali ruoli di gestione
+                    // pagina attivi. Non è l'unica difesa: AziendaPermissionService.resolveCapabilities
+                    // verifica comunque il rapporto ad ogni controllo, quindi l'accesso è già negato
+                    // anche se questa chiamata fallisse per qualche motivo.
+                    aziendaPermissionService.revokeAllRolesForEndedEmployment(aziendaId, userId);
+                }
+            }
+        }
         log.debug("Profilo {} aggiornato dall'utente {}", saved.getId(), userId);
         long followersCount = followRepository.countByFollowedId(userId);
         long followingCount = followRepository.countByFollowerId(userId);
@@ -110,5 +130,17 @@ public class ProfileService {
     private Profile findByUserId(Long userId) {
         return profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profilo non trovato per l'utente " + userId));
+    }
+
+    /**
+     * @param profile profilo di cui esaminare le esperienze
+     * @return gli id delle aziende registrate per cui il profilo ha un'esperienza ancora "in corso"
+     *         ({@code dataEnd IS NULL}), cioè le aziende presso cui l'utente risulta attualmente assunto
+     */
+    private Set<Long> aziendeConRapportoAttivo(Profile profile) {
+        return profile.getEsperienze().stream()
+                .filter(e -> e.getAziendaCollegata() != null && e.getDataEnd() == null)
+                .map(e -> e.getAziendaCollegata().getId())
+                .collect(Collectors.toSet());
     }
 }

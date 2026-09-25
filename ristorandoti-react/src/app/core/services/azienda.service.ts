@@ -48,4 +48,11 @@ export class AziendaService {
       .get<Page<AziendaPersona>>(`${this.baseUrl}/${aziendaId}/persone`, { params })
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
+
+  /** Aggiorna la descrizione della sezione Panoramica. Richiede MANAGE_OVERVIEW. */
+  updatePanoramica(id: number, descrizione: string): Observable<Azienda> {
+    return this.http
+      .put<Azienda>(`${this.baseUrl}/${id}/panoramica`, { descrizione })
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
 }

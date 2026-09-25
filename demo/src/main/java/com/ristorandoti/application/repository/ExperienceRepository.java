@@ -1,5 +1,7 @@
 package com.ristorandoti.application.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -26,4 +28,25 @@ public interface ExperienceRepository extends JpaRepository<Experience, Long> {
      */
     @EntityGraph(attributePaths = {"profile", "profile.user"})
     Page<Experience> findByAziendaCollegataIdAndDataEndIsNull(Long aziendaId, Pageable pageable);
+
+    /**
+     * Come {@link #findByAziendaCollegataIdAndDataEndIsNull(Long, Pageable)}, senza paginazione:
+     * usata dalla gestione permessi della Dashboard, che mostra tutti i dipendenti attuali in
+     * un'unica schermata.
+     *
+     * @param aziendaId azienda di cui elencare i dipendenti
+     * @return le esperienze correnti collegate all'azienda
+     */
+    @EntityGraph(attributePaths = {"profile", "profile.user"})
+    List<Experience> findAllByAziendaCollegataIdAndDataEndIsNull(Long aziendaId);
+
+    /**
+     * @param aziendaId azienda su cui verificare il rapporto di lavoro
+     * @param userId    utente da verificare
+     * @return {@code true} se {@code userId} ha un'esperienza collegata all'azienda ancora in corso,
+     *         cioè se il suo "rapporto di assunzione" con l'azienda risulta verificato. Nota: è
+     *         un'informazione auto-dichiarata dall'utente nel proprio profilo, non confermata dal
+     *         datore di lavoro (non esiste altro concetto di impiego nel modello dati attuale).
+     */
+    boolean existsByAziendaCollegataIdAndProfileUserIdAndDataEndIsNull(Long aziendaId, Long userId);
 }

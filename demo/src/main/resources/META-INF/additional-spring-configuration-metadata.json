@@ -19,6 +19,14 @@
     {
       "name": "app.google",
       "description": "Configurazione dell'accesso con Google (Sign in with Google)."
+    },
+    {
+      "name": "app.rate-limit.tracking",
+      "description": "Rate limiting dedicato agli endpoint di tracciamento metriche della Dashboard aziendale."
+    },
+    {
+      "name": "app.dashboard",
+      "description": "Decisioni configurabili della Dashboard aziendale (vedi DashboardProperties)."
     }
   ],
   "properties": [
@@ -69,6 +77,75 @@
       "type": "java.lang.String",
       "description": "Client ID OAuth 'Applicazione web' della Google Cloud Console, usato per validare gli ID token Google. Se vuoto, l'accesso con Google è disabilitato (503).",
       "defaultValue": ""
+    },
+    {
+      "name": "app.rate-limit.tracking.capacity",
+      "type": "java.lang.Long",
+      "description": "Capacità del bucket dedicato agli endpoint di tracciamento metriche (più stretto del bucket generale)."
+    },
+    {
+      "name": "app.rate-limit.tracking.refill-tokens",
+      "type": "java.lang.Long",
+      "description": "Numero di token ricaricati a ogni periodo di refill per gli endpoint di tracciamento."
+    },
+    {
+      "name": "app.rate-limit.tracking.refill-period",
+      "type": "java.time.Duration",
+      "description": "Intervallo di ricarica dei token per gli endpoint di tracciamento (es. 1m, 30s)."
+    },
+    {
+      "name": "app.dashboard.job-duration-days",
+      "type": "java.lang.Integer",
+      "description": "Durata di un'offerta di lavoro dalla pubblicazione, in giorni.",
+      "defaultValue": 7
+    },
+    {
+      "name": "app.dashboard.job-expired-retention-days",
+      "type": "java.lang.Integer",
+      "description": "Giorni di conservazione di un'offerta scaduta prima della cancellazione automatica.",
+      "defaultValue": 7
+    },
+    {
+      "name": "app.dashboard.max-offerte-attive",
+      "type": "java.lang.Integer",
+      "description": "Numero massimo di offerte di lavoro attive contemporaneamente per azienda.",
+      "defaultValue": 3
+    },
+    {
+      "name": "app.dashboard.overview-max-length",
+      "type": "java.lang.Integer",
+      "description": "Lunghezza massima del testo della sezione Panoramica.",
+      "defaultValue": 4000
+    },
+    {
+      "name": "app.dashboard.page-settings-requires-manage-permissions",
+      "type": "java.lang.Boolean",
+      "description": "Se true, la modifica dei dati anagrafici della pagina richiede MANAGE_PERMISSIONS oltre al proprietario.",
+      "defaultValue": true
+    },
+    {
+      "name": "app.dashboard.post-soft-delete-purge-days",
+      "type": "java.lang.Integer",
+      "description": "Giorni dopo i quali un post rimosso (soft-delete) viene cancellato fisicamente; 0 = mai.",
+      "defaultValue": 0
+    },
+    {
+      "name": "app.dashboard.search-metric-mode",
+      "type": "com.ristorandoti.application.config.DashboardProperties$SearchMetricMode",
+      "description": "Come viene calcolata la metrica 'Ricerche': apparizioni nei risultati (default) o solo click.",
+      "defaultValue": "appearance"
+    },
+    {
+      "name": "app.dashboard.view-dedup-ttl-hours",
+      "type": "java.lang.Integer",
+      "description": "Finestra di deduplica (in ore) per visualizzatori unici e apparizioni nei risultati di ricerca.",
+      "defaultValue": 48
+    },
+    {
+      "name": "app.dashboard.enforce-last-admin-guard",
+      "type": "java.lang.Boolean",
+      "description": "Se true, la revoca di un ruolo Admin verifica che resti sempre almeno un Admin attivo.",
+      "defaultValue": true
     }
   ]
 }

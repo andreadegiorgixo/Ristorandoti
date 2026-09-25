@@ -12,7 +12,8 @@ public interface AziendaFollowRepository extends JpaRepository<AziendaFollow, Lo
 
     boolean existsByFollowerIdAndAziendaId(Long followerId, Long aziendaId);
 
-    void deleteByFollowerIdAndAziendaId(Long followerId, Long aziendaId);
+    /** @return il numero di righe cancellate (0 o 1, il follow è unico per coppia utente-azienda). */
+    long deleteByFollowerIdAndAziendaId(Long followerId, Long aziendaId);
 
     /** Numero di persone che seguono la pagina aziendale. */
     long countByAziendaId(Long aziendaId);

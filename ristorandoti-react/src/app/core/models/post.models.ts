@@ -1,3 +1,6 @@
+/** Visibilità di un post di pagina aziendale (i post personali sono sempre PUBBLICO). */
+export type PostVisibilita = 'PUBBLICO' | 'PRIVATO';
+
 /** Post del feed (PostDto) */
 export interface Post {
   id: number;
@@ -11,6 +14,7 @@ export interface Post {
   dataCreazione: string;
   likeCount: number;
   likedByMe: boolean;
+  visibilita: PostVisibilita;
 }
 
 /** Body di POST /api/posts (CreatePostRequestDto): serve almeno testo o foto */

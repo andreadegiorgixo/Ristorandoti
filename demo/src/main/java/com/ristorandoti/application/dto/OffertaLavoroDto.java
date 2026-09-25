@@ -2,6 +2,8 @@ package com.ristorandoti.application.dto;
 
 import java.time.Instant;
 
+import com.ristorandoti.application.entity.StatoOffertaLavoro;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,4 +36,13 @@ public class OffertaLavoroDto {
 
     /** Istante di pubblicazione in formato ISO-8601 UTC. */
     private Instant dataCreazione;
+
+    /** Istante di scadenza (dataCreazione + 7 giorni), in formato ISO-8601 UTC. */
+    private Instant dataScadenza;
+
+    /** Stato effettivo, ricalcolato a ogni lettura confrontando {@code dataScadenza} con "ora". */
+    private StatoOffertaLavoro stato;
+
+    /** {@code true} se l'utente che fa la richiesta si è già candidato per questa offerta. */
+    private boolean candidaturaGiaInviata;
 }

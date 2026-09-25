@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, landingGuard } from './core/guards/auth.guard';
+import { dashboardAccessGuard } from './core/guards/dashboard-access.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
@@ -79,6 +80,48 @@ export const routes: Routes = [
         path: 'persone',
         title: 'Persone — Ristorandoti',
         loadComponent: () => import('./pages/azienda-persone/azienda-persone').then((m) => m.AziendaPersone),
+      },
+    ],
+  },
+  {
+    path: 'azienda/:aziendaId/dashboard',
+    canActivate: [authGuard, dashboardAccessGuard],
+    loadComponent: () =>
+      import('./pages/azienda-dashboard/azienda-dashboard-shell').then((m) => m.AziendaDashboardShell),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'home' },
+      {
+        path: 'home',
+        title: 'Dashboard — Ristorandoti',
+        loadComponent: () => import('./pages/azienda-dashboard/home/dashboard-home').then((m) => m.DashboardHome),
+      },
+      {
+        path: 'post',
+        title: 'Dashboard · Post — Ristorandoti',
+        loadComponent: () => import('./pages/azienda-dashboard/post/dashboard-post').then((m) => m.DashboardPost),
+      },
+      {
+        path: 'lavoro',
+        title: 'Dashboard · Lavoro — Ristorandoti',
+        loadComponent: () => import('./pages/azienda-dashboard/lavoro/dashboard-lavoro').then((m) => m.DashboardLavoro),
+      },
+      {
+        path: 'panoramica',
+        title: 'Dashboard · Panoramica — Ristorandoti',
+        loadComponent: () =>
+          import('./pages/azienda-dashboard/panoramica/dashboard-panoramica').then((m) => m.DashboardPanoramica),
+      },
+      {
+        path: 'permessi',
+        title: 'Dashboard · Permessi — Ristorandoti',
+        loadComponent: () =>
+          import('./pages/azienda-dashboard/permessi/dashboard-permessi').then((m) => m.DashboardPermessi),
+      },
+      {
+        path: 'impostazioni',
+        title: 'Dashboard · Impostazioni — Ristorandoti',
+        loadComponent: () =>
+          import('./pages/azienda-dashboard/impostazioni/dashboard-impostazioni').then((m) => m.DashboardImpostazioni),
       },
     ],
   },

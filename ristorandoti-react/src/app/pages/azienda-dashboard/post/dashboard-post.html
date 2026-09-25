@@ -1,0 +1,104 @@
+<div class="flex flex-col gap-4">
+  @if (puoiScrivere() && azienda(); as a) {
+    <app-post-composer [azienda]="a" (published)="onPublished($event)" />
+  }
+
+  <section class="card p-5 sm:p-6" aria-labelledby="post-title">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 id="post-title" class="text-lg font-bold">Post</h1>
+      <div class="flex items-center gap-3">
+        @if (!puoiScrivere()) {
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold tracking-wide text-slate-500 uppercase">Sola lettura</span>
+        }
+        <div class="flex gap-1 rounded-xl bg-slate-100 p-1" role="group" aria-label="Filtra per stato">
+          @for (f of filtri; track f.value) {
+            <button
+              type="button"
+              (click)="filtro.set(f.value)"
+              [attr.aria-pressed]="filtro() === f.value"
+              class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+              [class.bg-white]="filtro() === f.value"
+              [class.shadow-sm]="filtro() === f.value"
+              [class.text-slate-900]="filtro() === f.value"
+              [class.text-slate-500]="filtro() !== f.value"
+            >
+              {{ f.label }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="mt-4 space-y-3" aria-hidden="true">
+        <div class="h-20 animate-pulse rounded-xl bg-slate-100"></div>
+        <div class="h-20 animate-pulse rounded-xl bg-slate-100"></div>
+      </div>
+    } @else if (error(); as err) {
+      <div class="mt-4 flex flex-col items-start gap-2">
+        <p class="text-sm text-slate-600">{{ err.message }}</p>
+        <button type="button" (click)="retry()" class="btn-secondary">Riprova</button>
+      </div>
+    } @else if (posts().length === 0) {
+      <p class="mt-3 text-sm text-slate-500">Nessun post da mostrare per questo filtro.</p>
+    } @else {
+      <ul class="mt-4 space-y-3">
+        @for (post of posts(); track post.id) {
+          <li class="rounded-xl border border-slate-100 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span
+                  class="rounded-full px-2 py-0.5 text-xs font-bold tracking-wide uppercase"
+                  [class.bg-emerald-50]="post.visibilita === 'PUBBLICO'"
+                  [class.text-emerald-700]="post.visibilita === 'PUBBLICO'"
+                  [class.bg-slate-100]="post.visibilita === 'PRIVATO'"
+                  [class.text-slate-500]="post.visibilita === 'PRIVATO'"
+                >
+                  {{ post.visibilita === 'PUBBLICO' ? 'Pubblico' : 'Privato' }}
+                </span>
+                <span class="text-xs text-slate-400">{{ post.dataCreazione | relativeTime }}</span>
+              </div>
+              <span class="shrink-0 text-xs font-medium text-slate-500">{{ post.likeCount }} like</span>
+            </div>
+
+            @if (editingId() === post.id) {
+              <div class="mt-3">
+                <textarea
+                  [ngModel]="editText()"
+                  (ngModelChange)="editText.set($event)"
+                  [maxlength]="maxLunghezza"
+                  rows="3"
+                  class="form-input"
+                  aria-label="Testo del post"
+                ></textarea>
+                <div class="mt-2 flex items-center gap-2">
+                  <button type="button" (click)="saveEdit(post)" [disabled]="saving()" class="btn-primary !px-3 !py-1.5 text-sm disabled:opacity-60">
+                    Salva
+                  </button>
+                  <button type="button" (click)="cancelEdit()" [disabled]="saving()" class="btn-secondary !px-3 !py-1.5 text-sm">Annulla</button>
+                </div>
+              </div>
+            } @else {
+              @if (post.contenuto) {
+                <p class="mt-2 text-sm whitespace-pre-line text-slate-700">{{ post.contenuto }}</p>
+              }
+              @if (post.mediaUrl) {
+                <img [src]="post.mediaUrl" alt="" class="mt-3 max-h-48 rounded-lg object-cover" />
+              }
+
+              @if (puoiScrivere()) {
+                <div class="mt-3 flex flex-wrap items-center gap-3 text-xs font-semibold">
+                  <button type="button" (click)="startEdit(post)" class="text-brand-700 hover:underline">Modifica</button>
+                  <button type="button" (click)="toggleVisibilita(post)" class="text-slate-600 hover:underline">
+                    {{ post.visibilita === 'PUBBLICO' ? 'Nascondi' : 'Rendi pubblico' }}
+                  </button>
+                  <button type="button" (click)="rimuovi(post)" class="text-red-600 hover:underline">Rimuovi</button>
+                </div>
+              }
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>

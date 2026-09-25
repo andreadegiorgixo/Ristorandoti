@@ -27,6 +27,21 @@ export class OffertaLavoroService {
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
+  /** Tutte le offerte dell'azienda (attive e scadute), per la Dashboard. */
+  getByAziendaDashboard(aziendaId: number, page = 0, size = 20): Observable<Page<OffertaLavoro>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http
+      .get<Page<OffertaLavoro>>(`${this.baseUrl}/aziende/${aziendaId}/offerte-lavoro/dashboard`, { params })
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
+  /** Modifica titolo/descrizione. Il backend rifiuta con 400 se l'offerta è scaduta nel frattempo. */
+  update(aziendaId: number, offertaId: number, payload: OffertaLavoroRequest): Observable<OffertaLavoro> {
+    return this.http
+      .put<OffertaLavoro>(`${this.baseUrl}/aziende/${aziendaId}/offerte-lavoro/${offertaId}`, payload)
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
   /** Chiude (elimina) un'offerta, liberando uno slot per una nuova. */
   chiudi(aziendaId: number, offertaId: number): Observable<void> {
     return this.http

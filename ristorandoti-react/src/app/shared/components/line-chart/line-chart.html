@@ -1,0 +1,30 @@
+<figure class="m-0">
+  <div class="relative h-64 sm:h-72">
+    <canvas #canvas role="img" [attr.aria-label]="ariaLabel()"></canvas>
+  </div>
+
+  <!-- Alternativa testuale/tabellare per chi non può vedere il grafico -->
+  <figcaption class="sr-only">
+    <table>
+      <caption>{{ ariaLabel() }}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Giorno</th>
+          @for (s of serie(); track s.etichetta) {
+            <th scope="col">{{ s.etichetta }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (giorno of etichette(); track $index; let i = $index) {
+          <tr>
+            <th scope="row">{{ giorno }}</th>
+            @for (s of serie(); track s.etichetta) {
+              <td>{{ s.valori[i] }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </figcaption>
+</figure>

@@ -6,11 +6,11 @@
     class="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:max-w-lg sm:rounded-2xl"
     role="dialog"
     aria-modal="true"
-    aria-label="Pubblica un'offerta di lavoro"
+    [attr.aria-label]="isEdit() ? 'Modifica offerta di lavoro' : 'Pubblica un\'offerta di lavoro'"
     (click)="$event.stopPropagation()"
   >
     <header class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
-      <h2 class="text-lg font-bold">Nuova offerta di lavoro</h2>
+      <h2 class="text-lg font-bold">{{ isEdit() ? 'Modifica offerta' : 'Nuova offerta di lavoro' }}</h2>
       <button
         type="button"
         (click)="close()"
@@ -45,9 +45,9 @@
         <button type="submit" [disabled]="saving()" class="btn-primary !py-2.5">
           @if (saving()) {
             <svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
-            Pubblicazione…
+            {{ isEdit() ? 'Salvataggio…' : 'Pubblicazione…' }}
           } @else {
-            Pubblica offerta
+            {{ isEdit() ? 'Salva modifiche' : 'Pubblica offerta' }}
           }
         </button>
       </div>

@@ -30,7 +30,8 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 
     long countByPostId(Long postId);
 
-    void deleteByPostIdAndUserId(Long postId, Long userId);
+    /** @return il numero di righe cancellate (0 o 1, il like è unico per coppia post-utente). */
+    long deleteByPostIdAndUserId(Long postId, Long userId);
 
     /**
      * @param postIds id dei post (non vuota)

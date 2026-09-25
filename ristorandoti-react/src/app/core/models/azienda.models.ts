@@ -48,8 +48,13 @@ export interface Azienda {
   followersCount: number;
   /** {@code true} se l'utente autenticato segue questa pagina. */
   followedByMe: boolean;
-  /** {@code true} se l'utente autenticato è proprietario o persona autorizzata: può pubblicare post e offerte. */
+  /**
+   * @deprecated sostituito dalle capability granulari della Dashboard (vedi `DashboardPermessiCorrenti`
+   * e `puoiVedereDashboard`); mantenuto per compatibilità ma non più usato per decidere cosa mostrare.
+   */
   gestibileDaMe: boolean;
+  /** {@code true} se l'utente autenticato è proprietario o ha almeno una capability sulla Dashboard. */
+  puoiVedereDashboard: boolean;
 }
 
 /** Persona restituita da {@code GET /api/aziende/{id}/persone} (AziendaPersonaDto). */

@@ -13,13 +13,16 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ristorandoti.application.config.DashboardProperties;
 import com.ristorandoti.application.dto.AziendaAutorizzazioneDto;
 import com.ristorandoti.application.dto.AziendaDto;
 import com.ristorandoti.application.dto.AziendaPersonaDto;
 import com.ristorandoti.application.dto.AziendaRequestDto;
 import com.ristorandoti.application.dto.PageResponseDto;
+import com.ristorandoti.application.dto.PanoramicaRequestDto;
 import com.ristorandoti.application.entity.Azienda;
 import com.ristorandoti.application.entity.AziendaAutorizzazione;
+import com.ristorandoti.application.entity.Capability;
 import com.ristorandoti.application.entity.Experience;
 import com.ristorandoti.application.entity.Profile;
 import com.ristorandoti.application.entity.User;
@@ -34,6 +37,8 @@ import com.ristorandoti.application.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.ristorandoti.application.mapper.ProfileMapper.blankToNull;
 
 /**
  * Logica di business delle aziende: creazione (qualsiasi utente autenticato, nessuna distinzione
@@ -61,6 +66,9 @@ public class AziendaService {
     private final AziendaAutorizzazioneRepository aziendaAutorizzazioneRepository;
     private final ExperienceRepository experienceRepository;
     private final AziendaMapper aziendaMapper;
+    private final AziendaPermissionService aziendaPermissionService;
+    private final MetricsService metricsService;
+    private final DashboardProperties dashboardProperties;
 
     /**
      * Crea una nuova azienda a nome dell'utente autenticato. Nessuna restrizione di ruolo:
@@ -92,7 +100,8 @@ public class AziendaService {
         long followersCount = aziendaFollowRepository.countByAziendaId(id);
         boolean followedByMe = aziendaFollowRepository.existsByFollowerIdAndAziendaId(currentUserId, id);
         boolean gestibileDaMe = isManageable(azienda, currentUserId);
-        return aziendaMapper.toDto(azienda, followersCount, followedByMe, gestibileDaMe);
+        boolean puoiVedereDashboard = aziendaPermissionService.hasCapability(id, currentUserId, Capability.VIEW_DASHBOARD);
+        return aziendaMapper.toDto(azienda, followersCount, followedByMe, gestibileDaMe, puoiVedereDashboard);
     }
 
     /**
@@ -127,40 +136,71 @@ public class AziendaService {
      * in ordine alfabetico. Usata dal campo di ricerca quando si collega un'esperienza a un'azienda
      * esistente.
      *
-     * @param query testo digitato dall'utente; se vuoto non viene eseguita nessuna ricerca
-     * @param page  indice della pagina (da 0)
-     * @param size  dimensione della pagina
+     * <p>Punto centrale in cui si registra la metrica "Ricerche" (apparizione di un'azienda nei
+     * risultati): tenerlo qui, in un solo posto, è ciò che rende facile cambiarne la definizione
+     * in futuro (es. contare solo i click sui risultati) senza toccare altri punti del codice.</p>
+     *
+     * @param query         testo digitato dall'utente; se vuoto non viene eseguita nessuna ricerca
+     * @param currentUserId utente che sta cercando (per la deduplica della metrica "Ricerche")
+     * @param page          indice della pagina (da 0)
+     * @param size          dimensione della pagina
      * @return una pagina delle aziende corrispondenti, in ordine alfabetico
      */
     @Transactional(readOnly = true)
-    public PageResponseDto<AziendaDto> search(String query, int page, int size) {
+    public PageResponseDto<AziendaDto> search(String query, Long currentUserId, int page, int size) {
         String trimmed = query == null ? "" : query.trim();
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), NAME_ASC);
         if (trimmed.isEmpty()) {
             return PageResponseDto.of(Page.empty(pageable), List.of());
         }
         Page<Azienda> aziende = aziendaRepository.findByNomeContainingIgnoreCase(trimmed, pageable);
+        aziende.getContent().forEach(azienda -> metricsService.recordSearchAppearance(azienda.getId(), currentUserId, trimmed));
         return PageResponseDto.of(aziende, aziende.getContent().stream().map(aziendaMapper::toDto).toList());
     }
 
     /**
-     * Aggiorna un'azienda esistente. Solo il proprietario può farlo.
+     * Aggiorna i dati anagrafici di un'azienda esistente (nome, logo, copertina, ...). Riservato
+     * al proprietario o, se {@code app.dashboard.page-settings-requires-manage-permissions} è
+     * attivo (default), a chi ha {@code MANAGE_PERMISSIONS}: non è una delle capability elencate
+     * nel brief, {@code MANAGE_PERMISSIONS} (tier Admin) è la più vicina.
      *
      * @param id            id dell'azienda
      * @param currentUserId utente autenticato (dal JWT)
      * @param request       nuovi valori, già validati
      * @return l'azienda aggiornata
      * @throws ResourceNotFoundException se l'azienda non esiste
-     * @throws AccessDeniedException     se l'utente autenticato non è il proprietario
+     * @throws AccessDeniedException     se l'utente autenticato non può modificare i dati della pagina
      */
     @Transactional
     public AziendaDto update(Long id, Long currentUserId, AziendaRequestDto request) {
         Azienda azienda = findById(id);
-        ensureOwner(azienda, currentUserId);
+        ensurePageSettingsEditable(azienda, currentUserId);
 
         aziendaMapper.updateEntity(azienda, request);
         Azienda saved = aziendaRepository.save(azienda);
         log.debug("Azienda {} aggiornata dall'utente {}", saved.getId(), currentUserId);
+        return aziendaMapper.toDto(saved);
+    }
+
+    /**
+     * Aggiorna il testo della sezione Panoramica. Richiede {@code MANAGE_OVERVIEW} (default:
+     * solo Admin).
+     *
+     * @param id            id dell'azienda
+     * @param currentUserId utente autenticato (dal JWT)
+     * @param request       nuovo testo, già validato
+     * @return l'azienda aggiornata
+     * @throws ResourceNotFoundException se l'azienda non esiste
+     * @throws AccessDeniedException     se l'utente autenticato non ha {@code MANAGE_OVERVIEW}
+     */
+    @Transactional
+    public AziendaDto updatePanoramica(Long id, Long currentUserId, PanoramicaRequestDto request) {
+        Azienda azienda = findById(id);
+        aziendaPermissionService.ensureCapability(id, currentUserId, Capability.MANAGE_OVERVIEW);
+
+        azienda.setDescrizione(blankToNull(request.getDescrizione()));
+        Azienda saved = aziendaRepository.save(azienda);
+        log.debug("Panoramica dell'azienda {} aggiornata dall'utente {}", id, currentUserId);
         return aziendaMapper.toDto(saved);
     }
 
@@ -201,35 +241,6 @@ public class AziendaService {
         Page<Experience> esperienze = experienceRepository.findByAziendaCollegataIdAndDataEndIsNull(aziendaId, pageable);
         List<AziendaPersonaDto> content = esperienze.getContent().stream().map(this::toPersonaDto).toList();
         return PageResponseDto.of(esperienze, content);
-    }
-
-    /**
-     * @param aziendaId id dell'azienda
-     * @param userId    utente da verificare
-     * @return {@code true} se {@code userId} è il proprietario o una persona autorizzata, quindi
-     *         può pubblicare post e offerte di lavoro come questa azienda
-     * @throws ResourceNotFoundException se l'azienda non esiste
-     */
-    @Transactional(readOnly = true)
-    public boolean isManageable(Long aziendaId, Long userId) {
-        return isManageable(findById(aziendaId), userId);
-    }
-
-    /**
-     * Come {@link #isManageable(Long, Long)}, ma lancia se l'utente non è autorizzato. Usato dai
-     * service che pubblicano contenuti a nome di un'azienda (post, offerte di lavoro).
-     *
-     * @param aziendaId id dell'azienda
-     * @param userId    utente da verificare (dal JWT)
-     * @throws ResourceNotFoundException se l'azienda non esiste
-     * @throws AccessDeniedException     se l'utente non è il proprietario né una persona autorizzata
-     */
-    @Transactional(readOnly = true)
-    public void ensureManageable(Long aziendaId, Long userId) {
-        if (!isManageable(aziendaId, userId)) {
-            throw new AccessDeniedException(
-                    "Solo il proprietario o le persone autorizzate possono gestire questa azienda");
-        }
     }
 
     /**
@@ -340,6 +351,22 @@ public class AziendaService {
         if (!azienda.getProprietario().getId().equals(currentUserId)) {
             throw new AccessDeniedException("Solo il proprietario può modificare o eliminare questa azienda");
         }
+    }
+
+    /**
+     * Modificare i dati anagrafici della pagina non è una delle 5 capability del brief: per
+     * default richiede il proprietario oppure {@code MANAGE_PERMISSIONS} (tier Admin, la
+     * capability più vicina), configurabile con {@code app.dashboard.page-settings-requires-manage-permissions}.
+     */
+    private void ensurePageSettingsEditable(Azienda azienda, Long currentUserId) {
+        if (azienda.getProprietario().getId().equals(currentUserId)) {
+            return;
+        }
+        if (dashboardProperties.isPageSettingsRequiresManagePermissions()
+                && aziendaPermissionService.hasCapability(azienda.getId(), currentUserId, Capability.MANAGE_PERMISSIONS)) {
+            return;
+        }
+        throw new AccessDeniedException("Solo il proprietario o un Admin possono modificare i dati di questa pagina");
     }
 
     private Pageable pageRequest(int page, int size) {

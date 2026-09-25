@@ -145,6 +145,44 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Assegnazione di ruolo non valida (destinatario non attualmente assunto dall'azienda, o già
+     * proprietario) → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da {@code AziendaPermissionService.assignRole/revokeRole}
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(InvalidRoleAssignmentException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidRoleAssignment(InvalidRoleAssignmentException ex,
+                                                                        HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    /**
+     * Limite di richieste superato su un endpoint di tracciamento metriche → {@code 429 Too Many Requests}.
+     *
+     * @param ex      eccezione lanciata dal controller di tracciamento
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponseDto> handleTooManyRequests(TooManyRequestsException ex, HttpServletRequest request) {
+        return build(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request, null);
+    }
+
+    /**
+     * Candidatura non valida (già inviata per la stessa offerta, o offerta scaduta) → {@code 400 Bad Request}.
+     *
+     * @param ex      eccezione lanciata da {@code CandidaturaLavoroService.candidati}
+     * @param request richiesta HTTP corrente
+     * @return risposta JSON di errore
+     */
+    @ExceptionHandler(InvalidCandidaturaException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidCandidatura(InvalidCandidaturaException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    /**
      * File oltre {@code spring.servlet.multipart.max-file-size} → {@code 413 Payload Too Large}.
      *
      * @param ex      eccezione lanciata dal parser multipart

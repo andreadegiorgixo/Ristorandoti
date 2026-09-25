@@ -2,6 +2,8 @@ package com.ristorandoti.application.dto;
 
 import java.time.Instant;
 
+import com.ristorandoti.application.entity.PostVisibilita;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,4 +43,7 @@ public class PostDto {
 
     /** {@code true} se l'utente che fa la richiesta ha messo like al post. */
     private boolean likedByMe;
+
+    /** Sempre {@code PUBBLICO} per i post personali; rilevante solo per i post di pagina aziendale. */
+    private PostVisibilita visibilita;
 }

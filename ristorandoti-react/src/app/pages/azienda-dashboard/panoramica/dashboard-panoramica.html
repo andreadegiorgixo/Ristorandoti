@@ -1,0 +1,45 @@
+<section class="card p-5 sm:p-6" aria-labelledby="panoramica-title">
+  <div class="flex items-center justify-between gap-3">
+    <h1 id="panoramica-title" class="text-lg font-bold">Panoramica</h1>
+    @if (!puoiScrivere()) {
+      <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold tracking-wide text-slate-500 uppercase">Sola lettura</span>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="mt-4 h-24 animate-pulse rounded-xl bg-slate-100" aria-hidden="true"></div>
+  } @else if (error(); as err) {
+    <div class="mt-4 flex flex-col items-start gap-2">
+      <p class="text-sm text-slate-600">{{ err.message }}</p>
+      <button type="button" (click)="retry()" class="btn-secondary">Riprova</button>
+    </div>
+  } @else if (modificaAttiva()) {
+    <textarea
+      [ngModel]="testo()"
+      (ngModelChange)="testo.set($event)"
+      [maxlength]="maxLunghezza"
+      rows="8"
+      class="form-input mt-4 resize-y"
+      placeholder="Racconta la tua azienda: storia, valori, cosa la rende speciale. Usa una riga vuota per separare i paragrafi, «- » a inizio riga per un elenco puntato, e incolla pure dei link."
+    ></textarea>
+    <p class="mt-1.5 text-right text-xs text-slate-400">{{ testo().length }}/{{ maxLunghezza }}</p>
+    <div class="mt-3 flex items-center gap-2">
+      <button type="button" (click)="salva()" [disabled]="saving()" class="btn-primary !px-4 !py-2 text-sm disabled:opacity-60">Salva</button>
+      <button type="button" (click)="annulla()" [disabled]="saving()" class="btn-secondary !px-4 !py-2 text-sm">Annulla</button>
+    </div>
+  } @else if (azienda(); as a) {
+    @if (a.descrizione) {
+      <div
+        class="mt-4 text-sm text-slate-700 [&_a]:text-brand-700 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5"
+        [innerHTML]="a.descrizione | overviewText"
+      ></div>
+    } @else {
+      <p class="mt-3 text-sm text-slate-500">Non hai ancora scritto una panoramica per la tua pagina.</p>
+    }
+    @if (puoiScrivere()) {
+      <button type="button" (click)="iniziaModifica()" class="btn-secondary mt-4 !px-4 !py-2 text-sm">
+        {{ a.descrizione ? 'Modifica' : 'Scrivi la panoramica' }}
+      </button>
+    }
+  }
+</section>

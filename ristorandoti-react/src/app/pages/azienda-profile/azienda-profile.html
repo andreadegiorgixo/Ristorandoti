@@ -49,8 +49,8 @@
             }
           </div>
           <div class="flex shrink-0 items-center gap-2">
-            @if (isOwner()) {
-              <button type="button" (click)="editOpen.set(true)" class="btn-secondary !px-4 !py-2">Modifica</button>
+            @if (a.puoiVedereDashboard) {
+              <a routerLink="/azienda/{{ a.id }}/dashboard" class="btn-secondary !px-4 !py-2">Visualizzala come dashboard</a>
             }
             <button
               type="button"
@@ -71,10 +71,6 @@
         <p class="mt-2 text-sm text-slate-500">
           <span class="font-semibold text-slate-700">{{ a.followersCount }}</span> follower
         </p>
-
-        @if (a.descrizione) {
-          <p class="mt-4 text-slate-700 whitespace-pre-line">{{ a.descrizione }}</p>
-        }
 
         <dl class="mt-4 grid gap-x-6 gap-y-2 text-sm text-slate-600 sm:grid-cols-2">
           @if (a.citta || a.indirizzo) {
@@ -145,6 +141,14 @@
       </nav>
     </section>
 
+    @if (a.descrizione) {
+      <!-- Panoramica -->
+      <section class="card mt-4 p-5 sm:p-6" aria-labelledby="panoramica-title">
+        <h2 id="panoramica-title" class="text-lg font-bold">Panoramica</h2>
+        <div class="mt-3 text-sm text-slate-700 [&_a]:text-brand-700 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5" [innerHTML]="a.descrizione | overviewText"></div>
+      </section>
+    }
+
     @if (tab() === 'home') {
       <!-- Post -->
       <section class="card mt-4 p-5 sm:p-6" aria-labelledby="post-title">
@@ -157,8 +161,8 @@
           <a routerLink="/azienda/{{ a.id }}/post" class="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline">Mostra tutti i post</a>
         } @else {
           <p class="mt-3 text-sm text-slate-500">{{ a.nome }} non ha ancora pubblicato nulla.</p>
-          @if (a.gestibileDaMe) {
-            <a routerLink="/azienda/{{ a.id }}/post" class="mt-2 inline-block text-sm font-semibold text-brand-700 hover:underline">Pubblica il primo post</a>
+          @if (a.puoiVedereDashboard) {
+            <a routerLink="/azienda/{{ a.id }}/dashboard/post" class="mt-2 inline-block text-sm font-semibold text-brand-700 hover:underline">Pubblica il primo post</a>
           }
         }
       </section>
@@ -185,16 +189,8 @@
       <section class="card mt-4 p-5 sm:p-6" aria-labelledby="lavoro-title">
         <div class="flex items-center justify-between gap-3">
           <h2 id="lavoro-title" class="text-lg font-bold">Offerte di lavoro</h2>
-          @if (a.gestibileDaMe) {
-            <button
-              type="button"
-              (click)="openOffertaForm()"
-              [disabled]="!puoiCreareOfferta()"
-              [title]="puoiCreareOfferta() ? '' : 'Massimo 3 offerte attive contemporaneamente'"
-              class="text-sm font-semibold text-brand-700 hover:underline disabled:text-slate-400 disabled:no-underline"
-            >
-              + Nuova offerta
-            </button>
+          @if (a.puoiVedereDashboard) {
+            <a routerLink="/azienda/{{ a.id }}/dashboard/lavoro" class="text-sm font-semibold text-brand-700 hover:underline">Gestisci</a>
           }
         </div>
 
@@ -208,10 +204,18 @@
             @for (o of offerte(); track o.id) {
               <li class="rounded-xl border border-slate-100 p-4">
                 <div class="flex items-start justify-between gap-3">
-                  <p class="font-semibold text-slate-900">{{ o.titolo }}</p>
-                  @if (a.gestibileDaMe) {
-                    <button type="button" (click)="chiudiOfferta(o)" class="shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600">Chiudi</button>
-                  }
+                  <div>
+                    <p class="font-semibold text-slate-900">{{ o.titolo }}</p>
+                    <p class="mt-0.5 text-xs text-slate-400">{{ o.dataScadenza | expiresIn }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="candidati(o)"
+                    [disabled]="o.candidaturaGiaInviata || candidaturaPending() === o.id"
+                    class="shrink-0 text-xs font-semibold text-brand-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+                  >
+                    {{ o.candidaturaGiaInviata ? 'Candidatura inviata' : 'Candidati' }}
+                  </button>
                 </div>
                 @if (o.descrizione) {
                   <p class="mt-1.5 text-sm whitespace-pre-line text-slate-600">{{ o.descrizione }}</p>
@@ -223,14 +227,6 @@
           <p class="mt-4 text-sm text-slate-500">Al momento non ci sono offerte di lavoro per {{ a.nome }}.</p>
         }
       </section>
-    }
-
-    @if (editOpen()) {
-      <app-azienda-form-modal [azienda]="a" (saved)="onSaved($event)" (closed)="editOpen.set(false)" />
-    }
-
-    @if (offertaFormOpen()) {
-      <app-offerta-lavoro-form-modal [aziendaId]="a.id" (saved)="onOffertaSaved($event)" (closed)="offertaFormOpen.set(false)" />
     }
   }
 </div>

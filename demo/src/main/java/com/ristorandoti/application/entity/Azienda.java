@@ -61,7 +61,8 @@ public class Azienda {
     @Column(name = "tipo", nullable = false, length = 50)
     private TipoAzienda tipo;
 
-    @Column(name = "descrizione", length = 2000)
+    /** Testo della sezione "Panoramica" della pagina pubblica (vedi {@code app.dashboard.overview-max-length}). */
+    @Column(name = "descrizione", length = 4000)
     private String descrizione;
 
     @Column(name = "indirizzo", length = 300)

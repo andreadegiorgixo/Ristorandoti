@@ -30,6 +30,7 @@ public class AziendaFollowService {
     private final AziendaFollowRepository aziendaFollowRepository;
     private final AziendaRepository aziendaRepository;
     private final UserRepository userRepository;
+    private final MetricsService metricsService;
 
     /**
      * Inizia a seguire una pagina aziendale. Idempotente.
@@ -49,6 +50,7 @@ public class AziendaFollowService {
                     .follower(userRepository.getReferenceById(followerId))
                     .azienda(azienda)
                     .build());
+            metricsService.recordFollowDelta(aziendaId, 1);
             log.debug("Utente {} ha iniziato a seguire l'azienda {}", followerId, aziendaId);
         }
         return toStatusDto(followerId, aziendaId);
@@ -63,8 +65,11 @@ public class AziendaFollowService {
      */
     @Transactional
     public FollowStatusDto unfollow(Long followerId, Long aziendaId) {
-        aziendaFollowRepository.deleteByFollowerIdAndAziendaId(followerId, aziendaId);
+        long righeCancellate = aziendaFollowRepository.deleteByFollowerIdAndAziendaId(followerId, aziendaId);
         aziendaFollowRepository.flush();
+        if (righeCancellate > 0) {
+            metricsService.recordFollowDelta(aziendaId, -1);
+        }
         return toStatusDto(followerId, aziendaId);
     }
 

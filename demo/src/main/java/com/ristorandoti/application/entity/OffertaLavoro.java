@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,11 +25,15 @@ import lombok.ToString;
 /**
  * Offerta di lavoro pubblicata da un'azienda (tabella {@code offerte_lavoro}).
  *
- * <p>Non esiste un campo "attiva": un'offerta non più disponibile viene eliminata
- * (vedi {@link com.ristorandoti.application.service.OffertaLavoroService#chiudi}), quindi
- * "offerte attive" equivale semplicemente alle righe presenti per l'azienda. Il limite di
- * 3 offerte contemporanee è applicativo, controllato in
- * {@link com.ristorandoti.application.service.OffertaLavoroService#create}.</p>
+ * <p>Scade {@code app.dashboard.job-duration-days} giorni dopo la pubblicazione
+ * ({@link #dataScadenza}, calcolata server-side). {@link #stato} è solo una cache aggiornata
+ * dallo scheduler di pulizia: ogni lettura ricalcola comunque lo stato effettivo confrontando
+ * {@link #dataScadenza} con l'istante corrente (vedi
+ * {@link com.ristorandoti.application.mapper.OffertaLavoroMapper}), quindi non dipende
+ * esclusivamente dallo scheduler. Il limite di offerte contemporanee è applicativo, controllato
+ * in modo transazionale in {@link com.ristorandoti.application.service.OffertaLavoroService#create}.
+ * Una chiusura manuale (proprietario/HR) o la pulizia automatica dopo la scadenza cancellano la
+ * riga; le candidature collegate seguono la stessa sorte via {@code ON DELETE CASCADE}.</p>
  */
 @Entity
 @Table(name = "offerte_lavoro")
@@ -62,6 +68,16 @@ public class OffertaLavoro {
 
     @Column(name = "data_creazione", nullable = false, updatable = false)
     private Instant dataCreazione;
+
+    /** Calcolata server-side alla creazione: {@code dataCreazione + jobDurationDays}. */
+    @Column(name = "data_scadenza", nullable = false)
+    private Instant dataScadenza;
+
+    /** Cache aggiornata dallo scheduler; non è l'unica fonte di verità (vedi Javadoc di classe). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stato", nullable = false, length = 20)
+    @Builder.Default
+    private StatoOffertaLavoro stato = StatoOffertaLavoro.ATTIVA;
 
     @PrePersist
     void onCreate() {

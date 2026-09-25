@@ -1,0 +1,80 @@
+<section class="card p-5 sm:p-6" aria-labelledby="home-title">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 id="home-title" class="text-lg font-bold">Home</h1>
+      <span class="mt-1 inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold tracking-wide text-slate-500 uppercase">
+        Sola lettura
+      </span>
+    </div>
+    <div class="flex gap-1 rounded-xl bg-slate-100 p-1" role="group" aria-label="Intervallo di tempo">
+      @for (i of intervalli; track i.value) {
+        <button
+          type="button"
+          (click)="intervallo.set(i.value)"
+          [attr.aria-pressed]="intervallo() === i.value"
+          class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+          [class.bg-white]="intervallo() === i.value"
+          [class.shadow-sm]="intervallo() === i.value"
+          [class.text-slate-900]="intervallo() === i.value"
+          [class.text-slate-500]="intervallo() !== i.value"
+        >
+          {{ i.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error(); as err) {
+    <div class="mt-4 flex flex-col items-start gap-2">
+      <p class="text-sm text-slate-600">{{ err.message }}</p>
+      <button type="button" (click)="retry()" class="btn-secondary">Riprova</button>
+    </div>
+  } @else {
+    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      @for (m of metricheDisponibili; track m.value) {
+        <app-metric-card
+          [label]="m.label"
+          [value]="serieDi(m.value)?.totalePeriodo ?? null"
+          [variazionePercento]="serieDi(m.value)?.variazionePercento ?? null"
+          [loading]="loading()"
+        />
+      }
+    </div>
+
+    @if (!loading() && !haDati()) {
+      <p class="mt-6 text-sm text-slate-500">
+        Non ci sono ancora dati per questa pagina: il grafico si popolerà con le prime visite, i primi follower e i primi like.
+      </p>
+    } @else {
+      <div class="mt-6 flex flex-wrap gap-2" role="group" aria-label="Metriche mostrate nel grafico">
+        @for (m of metricheDisponibili; track m.value) {
+          <button
+            type="button"
+            (click)="toggleMetrica(m.value)"
+            [attr.aria-pressed]="metricheSelezionate().has(m.value)"
+            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition"
+            [class.border-transparent]="metricheSelezionate().has(m.value)"
+            [class.text-white]="metricheSelezionate().has(m.value)"
+            [class.border-slate-200]="!metricheSelezionate().has(m.value)"
+            [class.text-slate-500]="!metricheSelezionate().has(m.value)"
+            [style.background-color]="metricheSelezionate().has(m.value) ? m.colore : null"
+          >
+            {{ m.label }}
+          </button>
+        }
+      </div>
+
+      @if (loading()) {
+        <div class="mt-4 h-64 animate-pulse rounded-xl bg-slate-100 sm:h-72" aria-hidden="true"></div>
+      } @else {
+        <div class="mt-4">
+          <app-line-chart [etichette]="etichetteGiorni()" [serie]="serieGrafico()" ariaLabel="Andamento delle metriche della pagina" />
+        </div>
+      }
+
+      @if (datiDisponibiliDal(); as dal) {
+        <p class="mt-3 text-xs text-slate-400">Dati disponibili dal {{ dal }}.</p>
+      }
+    }
+  }
+</section>

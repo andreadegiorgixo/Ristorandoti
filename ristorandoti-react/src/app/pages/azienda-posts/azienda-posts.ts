@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ApiError } from '../../core/http/api-error';
 import { Azienda } from '../../core/models/azienda.models';
 import { AziendaService } from '../../core/services/azienda.service';
+import { DashboardPermissionService } from '../../core/services/dashboard-permission.service';
 import { PostService } from '../../core/services/post.service';
 import { PostCard } from '../../shared/components/post-card/post-card';
 import { PostSkeleton } from '../../shared/components/post-card/post-skeleton';
@@ -12,7 +13,12 @@ import { PostComposer } from '../../shared/components/post-composer/post-compose
 import { InfiniteScrollDirective } from '../../shared/directives/infinite-scroll.directive';
 import { PostPager } from '../../shared/utils/post-pager';
 
-/** Elenco completo dei post pubblicati come pagina aziendale (/azienda/:aziendaId/post). */
+/**
+ * Elenco completo dei post pubblicati come pagina aziendale (/azienda/:aziendaId/post). Il
+ * composer inline è visibile a chi ha {@code MANAGE_POSTS} (o è proprietario) — verificato tramite
+ * {@link DashboardPermissionService}, non più tramite il campo deprecato {@code gestibileDaMe}
+ * (che non riflette i ruoli company-scoped introdotti con la Dashboard).
+ */
 @Component({
   selector: 'app-azienda-posts',
   imports: [RouterLink, PostCard, PostSkeleton, PostComposer, InfiniteScrollDirective],
@@ -21,6 +27,7 @@ import { PostPager } from '../../shared/utils/post-pager';
 export class AziendaPosts implements OnDestroy {
   private readonly aziendaService = inject(AziendaService);
   private readonly postService = inject(PostService);
+  private readonly permissionService = inject(DashboardPermissionService);
   private readonly title = inject(Title);
 
   readonly aziendaId = input.required<string>();
@@ -28,6 +35,7 @@ export class AziendaPosts implements OnDestroy {
   protected readonly azienda = signal<Azienda | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<ApiError | null>(null);
+  protected readonly puoiPubblicare = signal(false);
 
   protected readonly pager = new PostPager((page) => this.postService.getByAzienda(Number(this.aziendaId()), page));
 
@@ -66,6 +74,12 @@ export class AziendaPosts implements OnDestroy {
         this.error.set(err);
         this.loading.set(false);
       },
+    });
+
+    this.puoiPubblicare.set(false);
+    this.permissionService.refresh(id).subscribe({
+      next: (permessi) => this.puoiPubblicare.set(permessi.proprietario || permessi.capabilities.includes('MANAGE_POSTS')),
+      error: () => this.puoiPubblicare.set(false),
     });
   }
 }

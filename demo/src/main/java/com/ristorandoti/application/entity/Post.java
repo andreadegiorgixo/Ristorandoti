@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -69,6 +71,20 @@ public class Post {
     /** Istante di pubblicazione, impostato automaticamente al primo salvataggio. */
     @Column(name = "data_creazione", nullable = false, updatable = false)
     private Instant dataCreazione;
+
+    /**
+     * Visibilità del post: {@code PUBBLICO} (default, sempre per i post personali) o
+     * {@code PRIVATO} (nascosto dalla vista pubblica di un'azienda, ma ancora gestibile dalla
+     * Dashboard). Vedi {@link com.ristorandoti.application.service.PostService}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibilita", nullable = false, length = 20)
+    @Builder.Default
+    private PostVisibilita visibilita = PostVisibilita.PUBBLICO;
+
+    /** {@code null} finché il post non è stato rimosso (soft-delete: la riga resta per lo storico dei like). */
+    @Column(name = "data_eliminazione")
+    private Instant dataEliminazione;
 
     @PrePersist
     void onCreate() {

@@ -66,6 +66,18 @@ public class AziendaDto {
     /**
      * {@code true} se l'utente che fa la richiesta è il proprietario o una persona autorizzata,
      * quindi può pubblicare post e offerte di lavoro come questa azienda. Valorizzato solo da {@code GET /{id}}.
+     *
+     * @deprecated sostituito dalle capability granulari della Dashboard (vedi
+     *             {@link #puoiVedereDashboard} e {@code GET /dashboard/permessi/correnti}); mantenuto
+     *             per non rompere eventuali client esistenti, ma nessun nuovo controllo lo usa.
      */
+    @Deprecated
     private boolean gestibileDaMe;
+
+    /**
+     * {@code true} se l'utente che fa la richiesta è il proprietario o ha almeno una capability
+     * sulla Dashboard di questa azienda: mostra il pulsante "Visualizzala come dashboard" al posto
+     * di "Modifica". Valorizzato solo da {@code GET /{id}}.
+     */
+    private boolean puoiVedereDashboard;
 }

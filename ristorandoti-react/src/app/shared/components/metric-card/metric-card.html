@@ -1,0 +1,21 @@
+<div class="card p-4">
+  <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ label() }}</p>
+
+  @if (loading()) {
+    <div class="mt-2 h-7 w-16 animate-pulse rounded bg-slate-100" aria-hidden="true"></div>
+    <div class="mt-2 h-3 w-24 animate-pulse rounded bg-slate-100" aria-hidden="true"></div>
+  } @else {
+    <p class="mt-1 text-2xl font-extrabold text-slate-900">{{ value() ?? 0 }}</p>
+    @if (variazionePercento() === null) {
+      <p class="mt-1 text-xs text-slate-400">Nessun dato nel periodo precedente</p>
+    } @else {
+      <p
+        class="mt-1 text-xs font-semibold"
+        [class.text-emerald-600]="variazionePercento()! >= 0"
+        [class.text-red-600]="variazionePercento()! < 0"
+      >
+        {{ variazionePercento()! >= 0 ? '+' : '' }}{{ variazionePercento()! | number: '1.0-1' }}% vs periodo precedente
+      </p>
+    }
+  }
+</div>

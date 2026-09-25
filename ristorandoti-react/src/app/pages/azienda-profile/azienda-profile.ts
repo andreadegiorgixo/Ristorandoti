@@ -6,36 +6,40 @@ import { ApiError } from '../../core/http/api-error';
 import { Azienda, AziendaPersona, FASCE_PREZZO, FasciaPrezzo, TIPI_AZIENDA, TipoAzienda } from '../../core/models/azienda.models';
 import { MAX_OFFERTE_ATTIVE, OffertaLavoro } from '../../core/models/lavoro.models';
 import { Post } from '../../core/models/post.models';
-import { AuthService } from '../../core/services/auth.service';
 import { AziendaService } from '../../core/services/azienda.service';
+import { CandidaturaService } from '../../core/services/candidatura.service';
 import { FollowService } from '../../core/services/follow.service';
+import { MetricsService } from '../../core/services/metrics.service';
 import { OffertaLavoroService } from '../../core/services/offerta-lavoro.service';
 import { PostService } from '../../core/services/post.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AziendaFormModal } from '../../shared/components/azienda-form-modal/azienda-form-modal';
-import { OffertaLavoroFormModal } from '../../shared/components/offerta-lavoro-form-modal/offerta-lavoro-form-modal';
 import { PersonaCard } from '../../shared/components/persona-card/persona-card';
 import { PostCard } from '../../shared/components/post-card/post-card';
+import { ExpiresInPipe } from '../../shared/pipes/expires-in.pipe';
+import { OverviewTextPipe } from '../../shared/pipes/overview-text.pipe';
 
 type Tab = 'home' | 'lavoro';
 
 /**
- * Profilo pubblico di un'azienda (/azienda/:aziendaId): logo, banner, dati e servizi offerti
+ * Vista pubblica di un'azienda (/azienda/:aziendaId): logo, banner, dati e servizi offerti
  * (tab HOME), più l'ultimo post e alcune persone che ci lavorano, e le offerte di lavoro attive
- * (tab LAVORO). Solo proprietario e persone autorizzate ({@code gestibileDaMe}) vedono i
- * pulsanti "Modifica" e "Nuova offerta".
+ * (tab LAVORO, con possibilità di candidarsi). Identica per tutti, admin compreso: chi ha
+ * {@code puoiVedereDashboard} vede in più il pulsante "Visualizzala come dashboard" al posto di
+ * "Modifica" (spostata nella Dashboard, sezione Impostazioni). La gestione delle offerte
+ * (pubblica/modifica/chiudi) vive anch'essa solo nella Dashboard: qui si può solo vedere e candidarsi.
  */
 @Component({
   selector: 'app-azienda-profile',
-  imports: [RouterLink, AziendaFormModal, OffertaLavoroFormModal, PersonaCard, PostCard],
+  imports: [RouterLink, PersonaCard, PostCard, ExpiresInPipe, OverviewTextPipe],
   templateUrl: './azienda-profile.html',
 })
 export class AziendaProfile {
-  private readonly auth = inject(AuthService);
   private readonly aziendaService = inject(AziendaService);
   private readonly followService = inject(FollowService);
   private readonly postService = inject(PostService);
   private readonly offertaLavoroService = inject(OffertaLavoroService);
+  private readonly candidaturaService = inject(CandidaturaService);
+  private readonly metricsService = inject(MetricsService);
   private readonly toast = inject(ToastService);
   private readonly title = inject(Title);
 
@@ -44,7 +48,6 @@ export class AziendaProfile {
   protected readonly data = signal<Azienda | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<ApiError | null>(null);
-  protected readonly editOpen = signal(false);
   protected readonly tab = signal<Tab>('home');
   protected readonly followPending = signal(false);
 
@@ -54,15 +57,7 @@ export class AziendaProfile {
 
   protected readonly offerte = signal<OffertaLavoro[]>([]);
   protected readonly offerteLoading = signal(true);
-  protected readonly offertaFormOpen = signal(false);
-
-  protected readonly isOwner = computed(() => {
-    const azienda = this.data();
-    const userId = this.auth.currentUser()?.id;
-    return !!azienda && !!userId && azienda.proprietarioId === userId;
-  });
-
-  protected readonly puoiCreareOfferta = computed(() => (this.data()?.gestibileDaMe ?? false) && this.offerte().length < MAX_OFFERTE_ATTIVE);
+  protected readonly candidaturaPending = signal<number | null>(null);
 
   private readonly tipoLabelByValue = new Map<TipoAzienda, string>(TIPI_AZIENDA.map((t) => [t.value, t.label]));
   private readonly fasciaByValue = new Map<FasciaPrezzo, (typeof FASCE_PREZZO)[number]>(FASCE_PREZZO.map((f) => [f.value, f]));
@@ -89,12 +84,6 @@ export class AziendaProfile {
 
   protected retry(): void {
     this.load(Number(this.aziendaId()));
-  }
-
-  protected onSaved(azienda: Azienda): void {
-    this.data.set({ ...this.data(), ...azienda });
-    this.editOpen.set(false);
-    this.toast.success('Modifiche salvate.');
   }
 
   /**
@@ -128,23 +117,21 @@ export class AziendaProfile {
     this.ultimoPost.set(post);
   }
 
-  protected openOffertaForm(): void {
-    if (!this.puoiCreareOfferta()) return;
-    this.offertaFormOpen.set(true);
-  }
+  /** Invia una candidatura per un'offerta di lavoro. Chiunque può candidarsi. */
+  protected candidati(offerta: OffertaLavoro): void {
+    if (this.candidaturaPending() === offerta.id || offerta.candidaturaGiaInviata) return;
+    this.candidaturaPending.set(offerta.id);
 
-  protected onOffertaSaved(offerta: OffertaLavoro): void {
-    this.offerte.update((list) => [offerta, ...list]);
-    this.offertaFormOpen.set(false);
-    this.toast.success('Offerta di lavoro pubblicata.');
-  }
-
-  protected chiudiOfferta(offerta: OffertaLavoro): void {
-    if (!confirm(`Vuoi davvero chiudere l'offerta "${offerta.titolo}"?`)) return;
-
-    this.offertaLavoroService.chiudi(offerta.aziendaId, offerta.id).subscribe({
-      next: () => this.offerte.update((list) => list.filter((o) => o.id !== offerta.id)),
-      error: (err: ApiError) => this.toast.error(err.message),
+    this.candidaturaService.candidati(offerta.aziendaId, offerta.id).subscribe({
+      next: () => {
+        this.candidaturaPending.set(null);
+        this.offerte.update((list) => list.map((o) => (o.id === offerta.id ? { ...o, candidaturaGiaInviata: true } : o)));
+        this.toast.success('Candidatura inviata!');
+      },
+      error: (err: ApiError) => {
+        this.candidaturaPending.set(null);
+        this.toast.error(err.message);
+      },
     });
   }
 
@@ -164,6 +151,10 @@ export class AziendaProfile {
       next: (azienda) => {
         this.data.set(azienda);
         this.loading.set(false);
+        // Solo la vista pubblica registra una visualizzazione: mai dalla Dashboard, altrimenti
+        // chi gestisce la pagina gonfierebbe le proprie statistiche (il backend esclude comunque
+        // chi ha accesso alla Dashboard, come ulteriore rete di sicurezza).
+        this.metricsService.recordPageView(id);
       },
       error: (err: ApiError) => {
         this.error.set(err);

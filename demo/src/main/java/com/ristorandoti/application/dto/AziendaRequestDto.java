@@ -39,7 +39,7 @@ public class AziendaRequestDto {
     @NotNull(message = "Il tipo di locale è obbligatorio")
     private TipoAzienda tipo;
 
-    @Size(max = 2000, message = "La descrizione non può superare 2000 caratteri")
+    @Size(max = 4000, message = "La descrizione non può superare 4000 caratteri")
     private String descrizione;
 
     @Size(max = 300, message = "L'indirizzo non può superare 300 caratteri")

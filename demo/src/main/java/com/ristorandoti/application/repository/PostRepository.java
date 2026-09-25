@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.ristorandoti.application.entity.Post;
+import com.ristorandoti.application.entity.PostVisibilita;
 
 /**
  * Repository Spring Data JPA per l'entità {@link Post}.
@@ -15,7 +16,8 @@ import com.ristorandoti.application.entity.Post;
  *
  * <p>Il feed globale e il profilo personale mostrano solo i post personali ({@code azienda IS NULL}):
  * i post pubblicati come pagina aziendale vivono solo nella home dell'azienda
- * (vedi {@link #findByAziendaId}).</p>
+ * (vedi {@link #findByAziendaIdAndVisibilitaAndDataEliminazioneIsNull}). Ogni query esclude
+ * sempre i post rimossi (soft-delete, {@code dataEliminazione IS NULL}).</p>
  */
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -24,7 +26,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return una pagina del feed globale (solo post personali)
      */
     @EntityGraph(attributePaths = "autore")
-    Page<Post> findByAziendaIdIsNull(Pageable pageable);
+    Page<Post> findByAziendaIdIsNullAndDataEliminazioneIsNull(Pageable pageable);
 
     /**
      * @param autoreId id dell'autore
@@ -32,13 +34,27 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @return una pagina dei post personali di quell'autore
      */
     @EntityGraph(attributePaths = "autore")
-    Page<Post> findByAutoreIdAndAziendaIdIsNull(Long autoreId, Pageable pageable);
+    Page<Post> findByAutoreIdAndAziendaIdIsNullAndDataEliminazioneIsNull(Long autoreId, Pageable pageable);
 
     /**
-     * @param aziendaId id dell'azienda
-     * @param pageable  pagina e ordinamento richiesti
+     * Vista pubblica dei post di un'azienda: solo {@code PUBBLICO}, mai i rimossi.
+     *
+     * @param aziendaId   id dell'azienda
+     * @param visibilita  visibilità richiesta (sempre {@code PUBBLICO} per i visitatori)
+     * @param pageable    pagina e ordinamento richiesti
      * @return una pagina dei post pubblicati come pagina di quell'azienda
      */
     @EntityGraph(attributePaths = {"autore", "azienda"})
-    Page<Post> findByAziendaId(Long aziendaId, Pageable pageable);
+    Page<Post> findByAziendaIdAndVisibilitaAndDataEliminazioneIsNull(Long aziendaId, PostVisibilita visibilita, Pageable pageable);
+
+    /**
+     * Vista Dashboard: sia pubblici sia privati (mai i rimossi), per chi ha almeno
+     * {@code VIEW_DASHBOARD} su questa azienda.
+     *
+     * @param aziendaId id dell'azienda
+     * @param pageable  pagina e ordinamento richiesti
+     * @return una pagina di tutti i post non rimossi dell'azienda
+     */
+    @EntityGraph(attributePaths = {"autore", "azienda"})
+    Page<Post> findByAziendaIdAndDataEliminazioneIsNull(Long aziendaId, Pageable pageable);
 }

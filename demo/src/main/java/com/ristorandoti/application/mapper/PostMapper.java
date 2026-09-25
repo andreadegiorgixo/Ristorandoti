@@ -31,6 +31,18 @@ public class PostMapper {
     }
 
     /**
+     * Applica nuovi testo/foto a un post esistente (modifica dalla Dashboard). Autore, azienda,
+     * visibilità e data di creazione non vengono toccati.
+     *
+     * @param post    entità da aggiornare, già gestita da JPA
+     * @param request nuovi valori, già validati
+     */
+    public void updateEntity(Post post, CreatePostRequestDto request) {
+        post.setContenuto(blankToNull(request.getContenuto()));
+        post.setMediaUrl(blankToNull(request.getMediaUrl()));
+    }
+
+    /**
      * @param post           post con autore già caricato
      * @param autoreProfile  profilo dell'autore ({@code null} se non trovato)
      * @param likeCount      numero di like del post
@@ -49,6 +61,7 @@ public class PostMapper {
                 .dataCreazione(post.getDataCreazione())
                 .likeCount(likeCount)
                 .likedByMe(likedByMe)
+                .visibilita(post.getVisibilita())
                 .build();
     }
 }

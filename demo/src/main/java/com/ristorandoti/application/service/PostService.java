@@ -1,5 +1,6 @@
 package com.ristorandoti.application.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,8 +18,10 @@ import com.ristorandoti.application.dto.CreatePostRequestDto;
 import com.ristorandoti.application.dto.PageResponseDto;
 import com.ristorandoti.application.dto.PostDto;
 import com.ristorandoti.application.entity.Azienda;
+import com.ristorandoti.application.entity.Capability;
 import com.ristorandoti.application.entity.Post;
 import com.ristorandoti.application.entity.PostLike;
+import com.ristorandoti.application.entity.PostVisibilita;
 import com.ristorandoti.application.entity.Profile;
 import com.ristorandoti.application.entity.User;
 import com.ristorandoti.application.exception.ResourceNotFoundException;
@@ -60,8 +63,9 @@ public class PostService {
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
     private final AziendaRepository aziendaRepository;
-    private final AziendaService aziendaService;
+    private final AziendaPermissionService aziendaPermissionService;
     private final PostMapper postMapper;
+    private final MetricsService metricsService;
 
     /**
      * @param currentUserId utente che richiede il feed (per {@code likedByMe})
@@ -71,7 +75,7 @@ public class PostService {
      */
     @Transactional(readOnly = true)
     public PageResponseDto<PostDto> getFeed(Long currentUserId, int page, int size) {
-        Page<Post> posts = postRepository.findByAziendaIdIsNull(pageRequest(page, size));
+        Page<Post> posts = postRepository.findByAziendaIdIsNullAndDataEliminazioneIsNull(pageRequest(page, size));
         return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
     }
 
@@ -88,16 +92,20 @@ public class PostService {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("Utente " + userId + " non trovato");
         }
-        Page<Post> posts = postRepository.findByAutoreIdAndAziendaIdIsNull(userId, pageRequest(page, size));
+        Page<Post> posts = postRepository.findByAutoreIdAndAziendaIdIsNullAndDataEliminazioneIsNull(userId, pageRequest(page, size));
         return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
     }
 
     /**
+     * Vista pubblica dei post di un'azienda: solo quelli {@code PUBBLICO} (mai i rimossi). Un post
+     * nascosto non è raggiungibile da qui nemmeno conoscendone l'id, perché questa query non lo
+     * restituisce affatto.
+     *
      * @param aziendaId     azienda di cui leggere i post pubblicati come pagina
      * @param currentUserId utente che fa la richiesta (per {@code likedByMe})
      * @param page          indice della pagina (da 0)
      * @param size          dimensione della pagina
-     * @return una pagina dei post dell'azienda, dal più recente
+     * @return una pagina dei post pubblici dell'azienda, dal più recente
      * @throws ResourceNotFoundException se l'azienda non esiste
      */
     @Transactional(readOnly = true)
@@ -105,7 +113,32 @@ public class PostService {
         if (!aziendaRepository.existsById(aziendaId)) {
             throw new ResourceNotFoundException("Azienda " + aziendaId + " non trovata");
         }
-        Page<Post> posts = postRepository.findByAziendaId(aziendaId, pageRequest(page, size));
+        Page<Post> posts = postRepository
+                .findByAziendaIdAndVisibilitaAndDataEliminazioneIsNull(aziendaId, PostVisibilita.PUBBLICO, pageRequest(page, size));
+        return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
+    }
+
+    /**
+     * Vista Dashboard dei post di un'azienda: sia pubblici sia privati (mai i rimossi), con filtro
+     * opzionale per stato. Richiede solo {@code VIEW_DASHBOARD} (lettura), non {@code MANAGE_POSTS}:
+     * chi non può gestire i post li vede comunque, in sola lettura, come da matrice di default.
+     *
+     * @param aziendaId     azienda di cui leggere i post
+     * @param currentUserId utente autenticato (dal JWT)
+     * @param filtroStato   {@code null} per tutti gli stati, altrimenti solo quello indicato
+     * @param page          indice della pagina (da 0)
+     * @param size          dimensione della pagina
+     * @return una pagina dei post dell'azienda, dal più recente
+     * @throws ResourceNotFoundException se l'azienda non esiste
+     * @throws org.springframework.security.access.AccessDeniedException se l'utente non ha {@code VIEW_DASHBOARD}
+     */
+    @Transactional(readOnly = true)
+    public PageResponseDto<PostDto> getPostsByAziendaDashboard(Long aziendaId, Long currentUserId,
+                                                                PostVisibilita filtroStato, int page, int size) {
+        aziendaPermissionService.ensureCapability(aziendaId, currentUserId, Capability.VIEW_DASHBOARD);
+        Page<Post> posts = filtroStato != null
+                ? postRepository.findByAziendaIdAndVisibilitaAndDataEliminazioneIsNull(aziendaId, filtroStato, pageRequest(page, size))
+                : postRepository.findByAziendaIdAndDataEliminazioneIsNull(aziendaId, pageRequest(page, size));
         return PageResponseDto.of(posts, toDtos(posts.getContent(), currentUserId));
     }
 
@@ -127,10 +160,9 @@ public class PostService {
     }
 
     /**
-     * Pubblica un nuovo post come pagina aziendale. Solo il proprietario o una persona
-     * autorizzata possono farlo (vedi {@link AziendaService#ensureManageable}). L'autore
-     * resta l'utente che pubblica, per tracciabilità; il post compare nella home dell'azienda,
-     * non nel feed personale dell'autore.
+     * Pubblica un nuovo post come pagina aziendale. Richiede {@link Capability#MANAGE_POSTS}
+     * (vedi {@link AziendaPermissionService}). L'autore resta l'utente che pubblica, per
+     * tracciabilità; il post compare nella home dell'azienda, non nel feed personale dell'autore.
      *
      * @param aziendaId azienda per cui pubblicare
      * @param userId    utente autenticato (dal JWT)
@@ -142,7 +174,7 @@ public class PostService {
      */
     @Transactional
     public PostDto createAziendaPost(Long aziendaId, Long userId, CreatePostRequestDto request) {
-        aziendaService.ensureManageable(aziendaId, userId);
+        aziendaPermissionService.ensureCapability(aziendaId, userId, Capability.MANAGE_POSTS);
 
         Azienda azienda = aziendaRepository.getReferenceById(aziendaId);
         User autore = userRepository.getReferenceById(userId);
@@ -164,12 +196,15 @@ public class PostService {
      */
     @Transactional
     public PostDto like(Long postId, Long userId) {
-        Post post = findPost(postId);
+        Post post = findVisiblePost(postId, userId);
         if (!postLikeRepository.existsByPostIdAndUserId(postId, userId)) {
             postLikeRepository.save(PostLike.builder()
                     .post(post)
                     .user(userRepository.getReferenceById(userId))
                     .build());
+            if (post.getAzienda() != null) {
+                metricsService.recordLikeDelta(post.getAzienda().getId(), 1);
+            }
         }
         return toDto(post, userId);
     }
@@ -184,15 +219,106 @@ public class PostService {
      */
     @Transactional
     public PostDto unlike(Long postId, Long userId) {
-        Post post = findPost(postId);
-        postLikeRepository.deleteByPostIdAndUserId(postId, userId);
+        Post post = findVisiblePost(postId, userId);
+        long righeCancellate = postLikeRepository.deleteByPostIdAndUserId(postId, userId);
         postLikeRepository.flush();
+        if (righeCancellate > 0 && post.getAzienda() != null) {
+            metricsService.recordLikeDelta(post.getAzienda().getId(), -1);
+        }
         return toDto(post, userId);
     }
 
-    private Post findPost(Long postId) {
-        return postRepository.findById(postId)
+    /**
+     * Modifica testo/foto di un post della pagina aziendale già pubblicato.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso o non appartiene a questa azienda
+     * @throws org.springframework.security.access.AccessDeniedException se l'utente non ha {@code MANAGE_POSTS}
+     */
+    @Transactional
+    public PostDto updateAziendaPost(Long aziendaId, Long postId, Long userId, CreatePostRequestDto request) {
+        aziendaPermissionService.ensureCapability(aziendaId, userId, Capability.MANAGE_POSTS);
+        Post post = findPostOfAzienda(aziendaId, postId);
+        postMapper.updateEntity(post, request);
+        log.debug("Post {} modificato sull'azienda {} dall'utente {}", postId, aziendaId, userId);
+        return toDto(post, userId);
+    }
+
+    /**
+     * Nasconde un post della pagina aziendale (visibilità {@code PRIVATO}): resta gestibile dalla
+     * Dashboard e i suoi like restano nel totale storico, ma non compare più nella vista pubblica.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso o non appartiene a questa azienda
+     * @throws org.springframework.security.access.AccessDeniedException se l'utente non ha {@code MANAGE_POSTS}
+     */
+    @Transactional
+    public void hide(Long aziendaId, Long postId, Long userId) {
+        aziendaPermissionService.ensureCapability(aziendaId, userId, Capability.MANAGE_POSTS);
+        findPostOfAzienda(aziendaId, postId).setVisibilita(PostVisibilita.PRIVATO);
+        log.debug("Post {} nascosto sull'azienda {} dall'utente {}", postId, aziendaId, userId);
+    }
+
+    /**
+     * Rende di nuovo pubblico un post precedentemente nascosto.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso o non appartiene a questa azienda
+     * @throws org.springframework.security.access.AccessDeniedException se l'utente non ha {@code MANAGE_POSTS}
+     */
+    @Transactional
+    public void unhide(Long aziendaId, Long postId, Long userId) {
+        aziendaPermissionService.ensureCapability(aziendaId, userId, Capability.MANAGE_POSTS);
+        findPostOfAzienda(aziendaId, postId).setVisibilita(PostVisibilita.PUBBLICO);
+        log.debug("Post {} reso di nuovo pubblico sull'azienda {} dall'utente {}", postId, aziendaId, userId);
+    }
+
+    /**
+     * Rimuove un post della pagina aziendale (soft-delete: la riga resta per non perdere lo
+     * storico dei like, ma sparisce da ogni lista, pubblica e Dashboard).
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso o non appartiene a questa azienda
+     * @throws org.springframework.security.access.AccessDeniedException se l'utente non ha {@code MANAGE_POSTS}
+     */
+    @Transactional
+    public void delete(Long aziendaId, Long postId, Long userId) {
+        aziendaPermissionService.ensureCapability(aziendaId, userId, Capability.MANAGE_POSTS);
+        findPostOfAzienda(aziendaId, postId).setDataEliminazione(Instant.now());
+        log.debug("Post {} rimosso sull'azienda {} dall'utente {}", postId, aziendaId, userId);
+    }
+
+    /**
+     * Post di un'utente qualsiasi (like/unlike): un post nascosto non deve essere raggiungibile
+     * nemmeno conoscendone l'id da chi non ha almeno {@code VIEW_DASHBOARD} sull'azienda che lo ha
+     * pubblicato. Risponde {@code 404}, non {@code 403}, per non rivelarne l'esistenza.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è stato rimosso, oppure è privato
+     *         e l'utente non ha accesso alla Dashboard di quell'azienda
+     */
+    private Post findVisiblePost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .filter(p -> p.getDataEliminazione() == null)
                 .orElseThrow(() -> new ResourceNotFoundException("Post " + postId + " non trovato"));
+        if (post.getAzienda() != null && post.getVisibilita() == PostVisibilita.PRIVATO
+                && !aziendaPermissionService.hasCapability(post.getAzienda().getId(), userId, Capability.VIEW_DASHBOARD)) {
+            throw new ResourceNotFoundException("Post " + postId + " non trovato");
+        }
+        return post;
+    }
+
+    /**
+     * Post di una specifica azienda, per le mutazioni della Dashboard (nascondi/mostra/rimuovi):
+     * verifica anche che il post appartenga davvero a {@code aziendaId} (protezione IDOR), non solo
+     * che l'id esista.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso, oppure non
+     *         appartiene a questa azienda (o è un post personale)
+     */
+    private Post findPostOfAzienda(Long aziendaId, Long postId) {
+        Post post = postRepository.findById(postId)
+                .filter(p -> p.getDataEliminazione() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Post " + postId + " non trovato"));
+        if (post.getAzienda() == null || !post.getAzienda().getId().equals(aziendaId)) {
+            throw new ResourceNotFoundException("Post " + postId + " non trovato per l'azienda " + aziendaId);
+        }
+        return post;
     }
 
     private PostDto toDto(Post post, Long currentUserId) {
