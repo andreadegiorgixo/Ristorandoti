@@ -55,6 +55,14 @@ export interface Profile {
   valutazioneMedia: number | null;
 }
 
+/** Persona in uscita da {@code GET /api/profiles/ricerca} (PersonaSearchResultDto). */
+export interface PersonaSearchResult {
+  userId: number;
+  name: string;
+  profilePictureUrl: string | null;
+  sommario: string | null;
+}
+
 export type ExperienceRequest = Omit<Experience, 'id' | 'aziendaLogoUrl'>;
 export type EducationRequest = Omit<Education, 'id'>;
 export type LanguageRequest = Omit<Language, 'id'>;

@@ -1,10 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Observable, catchError, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { toApiError } from '../http/api-error';
-import { Profile, ProfileUpdateRequest } from '../models/profile.models';
+import { Page } from '../models/post.models';
+import { PersonaSearchResult, Profile, ProfileUpdateRequest } from '../models/profile.models';
 import { AuthService } from './auth.service';
 
 /**
@@ -58,6 +59,14 @@ export class ProfileService {
   getByUserId(userId: number): Observable<Profile> {
     return this.http
       .get<Profile>(`${this.baseUrl}/${userId}`)
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
+  /** Ricerca persone per nome o headline. Usata dalla ricerca globale in navbar e dalla pagina risultati. */
+  search(query: string, page = 0, size = 6): Observable<Page<PersonaSearchResult>> {
+    const params = new HttpParams().set('q', query).set('page', page).set('size', size);
+    return this.http
+      .get<Page<PersonaSearchResult>>(`${this.baseUrl}/ricerca`, { params })
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 

@@ -41,6 +41,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/feed/feed').then((m) => m.Feed),
   },
   {
+    path: 'ricerca',
+    title: 'Ricerca — Ristorandoti',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/search-results/search-results').then((m) => m.SearchResults),
+  },
+  {
     path: 'profile',
     canActivate: [authGuard],
     children: [

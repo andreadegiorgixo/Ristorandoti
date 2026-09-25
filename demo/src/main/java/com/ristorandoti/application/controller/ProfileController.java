@@ -8,8 +8,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ristorandoti.application.dto.PageResponseDto;
+import com.ristorandoti.application.dto.PersonaSearchResultDto;
 import com.ristorandoti.application.dto.ProfileDto;
 import com.ristorandoti.application.dto.ProfileUpdateRequestDto;
 import com.ristorandoti.application.security.JwtService;
@@ -31,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProfileController {
 
+    private static final String DEFAULT_PAGE_SIZE = "20";
+
     private final ProfileService profileService;
 
     /**
@@ -51,6 +56,21 @@ public class ProfileController {
     @GetMapping("/{userId}")
     public ResponseEntity<ProfileDto> getProfile(@AuthenticationPrincipal Jwt jwt, @PathVariable Long userId) {
         return ResponseEntity.ok(profileService.getProfile(userId, JwtService.extractUserId(jwt)));
+    }
+
+    /**
+     * Ricerca le persone il cui nome o headline contiene il testo dato, usata dalla ricerca
+     * globale in navbar.
+     *
+     * @param q testo digitato dall'utente; se vuoto la ricerca non restituisce risultati
+     * @return {@code 200 OK} con una pagina delle persone corrispondenti, in ordine alfabetico
+     */
+    @GetMapping("/ricerca")
+    public ResponseEntity<PageResponseDto<PersonaSearchResultDto>> search(
+            @RequestParam(name = "q", defaultValue = "") String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size) {
+        return ResponseEntity.ok(profileService.search(q, page, size));
     }
 
     /**

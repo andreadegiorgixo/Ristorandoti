@@ -1,0 +1,172 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
+  @if (hasAnyQuery()) {
+    <h1 class="text-2xl font-extrabold tracking-tight">Risultati per &ldquo;{{ query() }}&rdquo;</h1>
+  } @else {
+    <h1 class="text-2xl font-extrabold tracking-tight">Ricerca</h1>
+    <p class="mt-2 text-sm text-slate-500">Usa la barra di ricerca in alto per cercare persone, aziende e offerte di lavoro.</p>
+  }
+
+  @if (hasAnyQuery()) {
+    <!-- Tab -->
+    <nav class="card mt-4 flex px-2" aria-label="Categorie di ricerca">
+      <button
+        type="button"
+        (click)="tab.set('persone')"
+        class="relative px-4 py-3 text-sm font-semibold transition"
+        [class.text-brand-700]="tab() === 'persone'"
+        [class.text-slate-500]="tab() !== 'persone'"
+        [attr.aria-current]="tab() === 'persone'"
+      >
+        Persone
+        @if (!persone.initialLoading()) { <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{{ persone.total() }}</span> }
+        @if (tab() === 'persone') { <span class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600"></span> }
+      </button>
+      <button
+        type="button"
+        (click)="tab.set('aziende')"
+        class="relative px-4 py-3 text-sm font-semibold transition"
+        [class.text-brand-700]="tab() === 'aziende'"
+        [class.text-slate-500]="tab() !== 'aziende'"
+        [attr.aria-current]="tab() === 'aziende'"
+      >
+        Aziende
+        @if (!aziende.initialLoading()) { <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{{ aziende.total() }}</span> }
+        @if (tab() === 'aziende') { <span class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600"></span> }
+      </button>
+      <button
+        type="button"
+        (click)="tab.set('lavoro')"
+        class="relative px-4 py-3 text-sm font-semibold transition"
+        [class.text-brand-700]="tab() === 'lavoro'"
+        [class.text-slate-500]="tab() !== 'lavoro'"
+        [attr.aria-current]="tab() === 'lavoro'"
+      >
+        Lavoro
+        @if (!lavoro.initialLoading()) { <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{{ lavoro.total() }}</span> }
+        @if (tab() === 'lavoro') { <span class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600"></span> }
+      </button>
+    </nav>
+
+    <section class="card mt-4 p-5 sm:p-6">
+      @if (tab() === 'persone') {
+        @if (persone.initialLoading()) {
+          <div class="space-y-3" aria-hidden="true">
+            <div class="h-14 animate-pulse rounded-xl bg-slate-100"></div>
+            <div class="h-14 animate-pulse rounded-xl bg-slate-100"></div>
+          </div>
+        } @else if (persone.error(); as err) {
+          <div class="flex flex-col items-center gap-3 py-6 text-center" role="alert">
+            <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+            <button type="button" (click)="persone.loadMore()" class="btn-secondary !py-2">Riprova</button>
+          </div>
+        } @else if (persone.empty()) {
+          <p class="text-sm text-slate-500">Nessuna persona trovata per &ldquo;{{ query() }}&rdquo;.</p>
+        } @else {
+          <ul class="space-y-1">
+            @for (p of persone.items(); track p.userId) {
+              <li>
+                <a [routerLink]="['/profile', p.userId]" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-slate-50">
+                  <app-avatar [src]="p.profilePictureUrl" [name]="p.name" />
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold text-slate-800">{{ p.name }}</span>
+                    @if (p.sommario) {
+                      <span class="block truncate text-sm text-slate-500">{{ p.sommario }}</span>
+                    }
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (!persone.loading() && !persone.last()) {
+            <div appInfiniteScroll (reached)="persone.loadMore()" class="flex justify-center pt-3">
+              <button type="button" (click)="persone.loadMore()" class="btn-secondary !py-2">Carica altre persone</button>
+            </div>
+          }
+          @if (persone.loading() && persone.items().length) {
+            <p class="pt-3 text-center text-sm text-slate-500">Caricamento…</p>
+          }
+        }
+      } @else if (tab() === 'aziende') {
+        @if (aziende.initialLoading()) {
+          <div class="space-y-3" aria-hidden="true">
+            <div class="h-14 animate-pulse rounded-xl bg-slate-100"></div>
+            <div class="h-14 animate-pulse rounded-xl bg-slate-100"></div>
+          </div>
+        } @else if (aziende.error(); as err) {
+          <div class="flex flex-col items-center gap-3 py-6 text-center" role="alert">
+            <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+            <button type="button" (click)="aziende.loadMore()" class="btn-secondary !py-2">Riprova</button>
+          </div>
+        } @else if (aziende.empty()) {
+          <p class="text-sm text-slate-500">Nessuna azienda trovata per &ldquo;{{ query() }}&rdquo;.</p>
+        } @else {
+          <ul class="space-y-1">
+            @for (a of aziende.items(); track a.id) {
+              <li>
+                <a [routerLink]="['/azienda', a.id]" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-slate-50">
+                  @if (a.fotoProfiloUrl) {
+                    <img [src]="a.fotoProfiloUrl" alt="" class="size-11 shrink-0 rounded-xl object-cover ring-1 ring-slate-100" />
+                  } @else {
+                    <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
+                      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
+                    </span>
+                  }
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold text-slate-800">{{ a.nome }}</span>
+                    <span class="block truncate text-sm text-slate-500">{{ a.citta || tipoLabel(a.tipo) }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (!aziende.loading() && !aziende.last()) {
+            <div appInfiniteScroll (reached)="aziende.loadMore()" class="flex justify-center pt-3">
+              <button type="button" (click)="aziende.loadMore()" class="btn-secondary !py-2">Carica altre aziende</button>
+            </div>
+          }
+          @if (aziende.loading() && aziende.items().length) {
+            <p class="pt-3 text-center text-sm text-slate-500">Caricamento…</p>
+          }
+        }
+      } @else {
+        @if (lavoro.initialLoading()) {
+          <div class="space-y-3" aria-hidden="true">
+            <div class="h-14 animate-pulse rounded-xl bg-slate-100"></div>
+            <div class="h-14 animate-pulse rounded-xl bg-slate-100"></div>
+          </div>
+        } @else if (lavoro.error(); as err) {
+          <div class="flex flex-col items-center gap-3 py-6 text-center" role="alert">
+            <p class="text-sm font-medium text-slate-700">{{ err.message }}</p>
+            <button type="button" (click)="lavoro.loadMore()" class="btn-secondary !py-2">Riprova</button>
+          </div>
+        } @else if (lavoro.empty()) {
+          <p class="text-sm text-slate-500">Nessuna offerta di lavoro trovata per &ldquo;{{ query() }}&rdquo;.</p>
+        } @else {
+          <ul class="space-y-1">
+            @for (o of lavoro.items(); track o.id) {
+              <li>
+                <a [routerLink]="['/azienda', o.aziendaId]" fragment="lavoro" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-slate-50">
+                  <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-sky-50 text-sky-700">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold text-slate-800">{{ o.titolo }}</span>
+                    <span class="block truncate text-sm text-slate-500">{{ o.aziendaNome }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (!lavoro.loading() && !lavoro.last()) {
+            <div appInfiniteScroll (reached)="lavoro.loadMore()" class="flex justify-center pt-3">
+              <button type="button" (click)="lavoro.loadMore()" class="btn-secondary !py-2">Carica altre offerte</button>
+            </div>
+          }
+          @if (lavoro.loading() && lavoro.items().length) {
+            <p class="pt-3 text-center text-sm text-slate-500">Caricamento…</p>
+          }
+        }
+      }
+    </section>
+  }
+</div>

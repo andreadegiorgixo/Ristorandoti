@@ -2,6 +2,7 @@ package com.ristorandoti.application.service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -159,6 +160,28 @@ public class OffertaLavoroService {
         OffertaLavoro offerta = findOfAzienda(aziendaId, offertaId);
         offertaLavoroRepository.delete(offerta);
         log.debug("Offerta di lavoro {} chiusa sull'azienda {} dall'utente {}", offertaId, aziendaId, userId);
+    }
+
+    /**
+     * Ricerca globale (tutte le aziende) delle offerte attive il cui titolo contiene il testo
+     * dato, dalla più recente. Usata dalla ricerca globale in navbar.
+     *
+     * @param query         testo digitato dall'utente; se vuoto non viene eseguita nessuna ricerca
+     * @param currentUserId utente che fa la richiesta (per {@code candidaturaGiaInviata})
+     * @param page          indice della pagina (da 0)
+     * @param size          dimensione della pagina
+     * @return una pagina delle offerte corrispondenti, dalla più recente
+     */
+    @Transactional(readOnly = true)
+    public PageResponseDto<OffertaLavoroDto> search(String query, Long currentUserId, int page, int size) {
+        String trimmed = query == null ? "" : query.trim();
+        Pageable pageable = pageRequest(page, size);
+        if (trimmed.isEmpty()) {
+            return PageResponseDto.of(Page.empty(pageable), List.of());
+        }
+        Page<OffertaLavoro> offerte = offertaLavoroRepository
+                .findByTitoloContainingIgnoreCaseAndDataScadenzaAfter(trimmed, Instant.now(), pageable);
+        return toPageResponse(offerte, currentUserId);
     }
 
     /**

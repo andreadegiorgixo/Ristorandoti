@@ -1,0 +1,110 @@
+<div class="relative w-full">
+  <div class="relative">
+    <svg class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+    <input
+      type="search"
+      [value]="query()"
+      (input)="onInput($any($event.target).value)"
+      (focus)="onFocus()"
+      (blur)="close()"
+      (keydown.escape)="close()"
+      (keydown.enter)="goToResults()"
+      autocomplete="off"
+      placeholder="Cerca persone, aziende, lavoro…"
+      aria-label="Ricerca globale"
+      class="form-input pl-9"
+    />
+  </div>
+
+  @if (open()) {
+    <div class="absolute inset-x-0 top-full z-30 mt-1 max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg">
+      @if (query().trim().length < minLength) {
+        <p class="px-3 py-2.5 text-sm text-slate-500">Continua a digitare per cercare persone, aziende e offerte di lavoro.</p>
+      } @else if (loading()) {
+        <p class="px-3 py-2.5 text-sm text-slate-500">Ricerca in corso…</p>
+      } @else if (!results().persone.length && !results().aziende.length && !results().lavoro.length) {
+        <p class="px-3 py-2.5 text-sm text-slate-500">Nessun risultato per "{{ query() }}"</p>
+      } @else {
+        @if (results().persone.length) {
+          <div class="border-b border-slate-100 pb-1.5">
+            <p class="px-3 pt-1 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase">Persone</p>
+            @for (p of results().persone; track p.userId) {
+              <a
+                [routerLink]="['/profile', p.userId]"
+                (mousedown)="$event.preventDefault()"
+                (click)="selectResult()"
+                class="flex items-center gap-3 px-3 py-2 hover:bg-brand-50"
+              >
+                <app-avatar [src]="p.profilePictureUrl" [name]="p.name" size="sm" />
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-slate-800">{{ p.name }}</span>
+                  @if (p.sommario) {
+                    <span class="block truncate text-xs text-slate-500">{{ p.sommario }}</span>
+                  }
+                </span>
+              </a>
+            }
+          </div>
+        }
+
+        @if (results().aziende.length) {
+          <div class="border-b border-slate-100 pb-1.5">
+            <p class="px-3 pt-1 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase">Aziende</p>
+            @for (a of results().aziende; track a.id) {
+              <a
+                [routerLink]="['/azienda', a.id]"
+                (mousedown)="$event.preventDefault()"
+                (click)="selectResult()"
+                class="flex items-center gap-3 px-3 py-2 hover:bg-brand-50"
+              >
+                @if (a.fotoProfiloUrl) {
+                  <img [src]="a.fotoProfiloUrl" alt="" class="size-9 shrink-0 rounded-lg object-cover ring-1 ring-slate-100" />
+                } @else {
+                  <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>
+                  </span>
+                }
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-slate-800">{{ a.nome }}</span>
+                  <span class="block truncate text-xs text-slate-500">{{ a.citta || tipoLabel(a.tipo) }}</span>
+                </span>
+              </a>
+            }
+          </div>
+        }
+
+        @if (results().lavoro.length) {
+          <div class="pb-1">
+            <p class="px-3 pt-1 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase">Lavoro</p>
+            @for (o of results().lavoro; track o.id) {
+              <a
+                [routerLink]="['/azienda', o.aziendaId]"
+                fragment="lavoro"
+                (mousedown)="$event.preventDefault()"
+                (click)="selectResult()"
+                class="flex items-center gap-3 px-3 py-2 hover:bg-brand-50"
+              >
+                <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-700">
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-slate-800">{{ o.titolo }}</span>
+                  <span class="block truncate text-xs text-slate-500">{{ o.aziendaNome }}</span>
+                </span>
+              </a>
+            }
+          </div>
+        }
+
+        <button
+          type="button"
+          (mousedown)="$event.preventDefault()"
+          (click)="goToResults()"
+          class="block w-full px-3 py-2 text-left text-sm font-semibold text-brand-700 hover:bg-brand-50"
+        >
+          Vedi tutti i risultati per "{{ query().trim() }}"
+        </button>
+      }
+    </div>
+  }
+</div>

@@ -34,6 +34,13 @@ public interface OffertaLavoroRepository extends JpaRepository<OffertaLavoro, Lo
      */
     long countByAziendaIdAndDataScadenzaAfter(Long aziendaId, Instant now);
 
+    /**
+     * Ricerca globale (tutte le aziende) delle offerte non ancora scadute il cui titolo contiene
+     * il testo dato (senza distinzione maiuscole/minuscole). Usata dalla ricerca globale in navbar.
+     */
+    @EntityGraph(attributePaths = {"azienda", "autore"})
+    Page<OffertaLavoro> findByTitoloContainingIgnoreCaseAndDataScadenzaAfter(String titolo, Instant now, Pageable pageable);
+
     /** Marca come scadute le offerte oltre {@code dataScadenza}: usato solo dallo scheduler di pulizia. */
     @Modifying(clearAutomatically = true)
     @Query("UPDATE OffertaLavoro o SET o.stato = :nuovo WHERE o.dataScadenza < :now AND o.stato = :attuale")

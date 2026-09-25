@@ -1,11 +1,18 @@
 package com.ristorandoti.application.service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ristorandoti.application.dto.PageResponseDto;
+import com.ristorandoti.application.dto.PersonaSearchResultDto;
 import com.ristorandoti.application.dto.ProfileDto;
 import com.ristorandoti.application.dto.ProfileUpdateRequestDto;
 import com.ristorandoti.application.entity.Profile;
@@ -32,6 +39,10 @@ import static com.ristorandoti.application.mapper.ProfileMapper.blankToNull;
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
+
+    private static final int MAX_PAGE_SIZE = 50;
+
+    private static final Sort NAME_ASC = Sort.by(Sort.Order.asc("user.name"), Sort.Order.asc("id"));
 
     private final ProfileRepository profileRepository;
     private final FollowRepository followRepository;
@@ -128,6 +139,35 @@ public class ProfileService {
         long recensioniCount = reviewRepository.countByDestinatarioId(userId);
         Double valutazioneMedia = reviewRepository.averageValutazioneByDestinatarioId(userId);
         return profileMapper.toDto(saved, followersCount, followingCount, false, recensioniCount, valutazioneMedia);
+    }
+
+    /**
+     * Ricerca le persone il cui nome o headline contiene il testo dato (senza distinzione
+     * maiuscole/minuscole), in ordine alfabetico. Usata dalla ricerca globale in navbar.
+     *
+     * @param query testo digitato dall'utente; se vuoto non viene eseguita nessuna ricerca
+     * @param page  indice della pagina (da 0)
+     * @param size  dimensione della pagina
+     * @return una pagina delle persone corrispondenti, in ordine alfabetico
+     */
+    @Transactional(readOnly = true)
+    public PageResponseDto<PersonaSearchResultDto> search(String query, int page, int size) {
+        String trimmed = query == null ? "" : query.trim();
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE), NAME_ASC);
+        if (trimmed.isEmpty()) {
+            return PageResponseDto.of(Page.empty(pageable), List.of());
+        }
+        Page<Profile> profiles = profileRepository.search(trimmed, pageable);
+        return PageResponseDto.of(profiles, profiles.getContent().stream().map(this::toSearchResult).toList());
+    }
+
+    private PersonaSearchResultDto toSearchResult(Profile profile) {
+        return PersonaSearchResultDto.builder()
+                .userId(profile.getUser().getId())
+                .name(profile.getUser().getName())
+                .profilePictureUrl(profile.getProfilePictureUrl())
+                .sommario(profile.getSommario())
+                .build();
     }
 
     private Profile findByUserId(Long userId) {

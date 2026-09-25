@@ -4,10 +4,11 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { Avatar } from '../../shared/components/avatar/avatar';
+import { GlobalSearch } from '../../shared/components/global-search/global-search';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, Avatar],
+  imports: [RouterLink, RouterLinkActive, Avatar, GlobalSearch],
   templateUrl: './navbar.html',
 })
 export class Navbar {

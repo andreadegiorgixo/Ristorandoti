@@ -48,4 +48,12 @@ export class OffertaLavoroService {
       .delete<void>(`${this.baseUrl}/aziende/${aziendaId}/offerte-lavoro/${offertaId}`)
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
+
+  /** Ricerca globale (tutte le aziende) delle offerte attive per titolo. Usata dalla ricerca globale in navbar e dalla pagina risultati. */
+  search(query: string, page = 0, size = 6): Observable<Page<OffertaLavoro>> {
+    const params = new HttpParams().set('q', query).set('page', page).set('size', size);
+    return this.http
+      .get<Page<OffertaLavoro>>(`${this.baseUrl}/offerte-lavoro/ricerca`, { params })
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
 }

@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { ApiError } from '../../core/http/api-error';
 import { Azienda, AziendaPersona, FASCE_PREZZO, FasciaPrezzo, TIPI_AZIENDA, TipoAzienda } from '../../core/models/azienda.models';
@@ -42,6 +42,7 @@ export class AziendaProfile {
   private readonly metricsService = inject(MetricsService);
   private readonly toast = inject(ToastService);
   private readonly title = inject(Title);
+  private readonly route = inject(ActivatedRoute);
 
   readonly aziendaId = input.required<string>();
 
@@ -70,7 +71,10 @@ export class AziendaProfile {
   constructor() {
     effect(() => {
       const id = Number(this.aziendaId());
-      untracked(() => this.load(id));
+      untracked(() => {
+        this.load(id);
+        if (this.route.snapshot.fragment === 'lavoro') this.tab.set('lavoro');
+      });
     });
     effect(() => {
       const nome = this.data()?.nome;

@@ -33,9 +33,9 @@ export class AziendaService {
       .pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
-  /** Ricerca per nome, in ordine alfabetico. Usata dal tipo-mentre-scrivi. */
-  search(query: string, size = 6): Observable<Page<Azienda>> {
-    const params = new HttpParams().set('q', query).set('page', 0).set('size', size);
+  /** Ricerca per nome, in ordine alfabetico. Usata dal tipo-mentre-scrivi e dalla ricerca globale. */
+  search(query: string, page = 0, size = 6): Observable<Page<Azienda>> {
+    const params = new HttpParams().set('q', query).set('page', page).set('size', size);
     return this.http
       .get<Page<Azienda>>(`${this.baseUrl}/ricerca`, { params })
       .pipe(catchError((err) => throwError(() => toApiError(err))));
