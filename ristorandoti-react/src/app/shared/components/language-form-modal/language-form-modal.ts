@@ -1,4 +1,5 @@
 import { Component, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { ApiError } from '../../../core/http/api-error';
@@ -54,10 +55,14 @@ export class LanguageFormModal {
 
   private readonly query = signal('');
 
+  /** Il form è reattivo (RxJS), non a segnali: serve un ponte per farlo leggere da `canSave`. */
+  private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
   protected readonly canSave = computed(() => {
-    const { lingua, livelloScritto, livelloParlato } = this.form.getRawValue();
-    const isKnownLanguage = LANGUAGES.some((l) => l.toLocaleLowerCase('it-IT') === lingua.trim().toLocaleLowerCase('it-IT'));
-    return isKnownLanguage && !this.alreadyAdded().has(lingua.trim().toLocaleLowerCase('it-IT'))
+    const { lingua, livelloScritto, livelloParlato } = this.formValue();
+    const linguaNormalizzata = (lingua ?? '').trim().toLocaleLowerCase('it-IT');
+    const isKnownLanguage = LANGUAGES.some((l) => l.toLocaleLowerCase('it-IT') === linguaNormalizzata);
+    return isKnownLanguage && !this.alreadyAdded().has(linguaNormalizzata)
       && !!livelloScritto && !!livelloParlato && !this.saving();
   });
 
