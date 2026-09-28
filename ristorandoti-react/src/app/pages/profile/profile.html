@@ -264,7 +264,7 @@
         }
 
         @for (post of pager.posts(); track post.id) {
-          <app-post-card [post]="post" (postChange)="pager.replace($event)" />
+          <app-post-card [post]="post" [editable]="isOwn()" (postChange)="pager.replace($event)" />
         }
 
         @if (pager.empty()) {

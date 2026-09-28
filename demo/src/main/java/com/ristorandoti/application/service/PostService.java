@@ -229,6 +229,20 @@ public class PostService {
     }
 
     /**
+     * Modifica testo/foto di un post personale già pubblicato. Solo l'autore può modificarlo.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso, non è
+     *         personale (pubblicato come pagina aziendale), oppure non è stato scritto da questo utente
+     */
+    @Transactional
+    public PostDto updatePost(Long postId, Long userId, CreatePostRequestDto request) {
+        Post post = findOwnPersonalPost(postId, userId);
+        postMapper.updateEntity(post, request);
+        log.debug("Post {} modificato dall'autore {}", postId, userId);
+        return toDto(post, userId);
+    }
+
+    /**
      * Modifica testo/foto di un post della pagina aziendale già pubblicato.
      *
      * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso o non appartiene a questa azienda
@@ -298,6 +312,24 @@ public class PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("Post " + postId + " non trovato"));
         if (post.getAzienda() != null && post.getVisibilita() == PostVisibilita.PRIVATO
                 && !aziendaPermissionService.hasCapability(post.getAzienda().getId(), userId, Capability.VIEW_DASHBOARD)) {
+            throw new ResourceNotFoundException("Post " + postId + " non trovato");
+        }
+        return post;
+    }
+
+    /**
+     * Post personale di un dato utente, per le sue mutazioni (modifica): verifica anche che il
+     * post non sia stato pubblicato come pagina aziendale e che appartenga davvero a {@code
+     * userId} (protezione IDOR), non solo che l'id esista.
+     *
+     * @throws ResourceNotFoundException se il post non esiste, è già stato rimosso, non è
+     *         personale, oppure non appartiene a questo utente
+     */
+    private Post findOwnPersonalPost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .filter(p -> p.getDataEliminazione() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Post " + postId + " non trovato"));
+        if (post.getAzienda() != null || !post.getAutore().getId().equals(userId)) {
             throw new ResourceNotFoundException("Post " + postId + " non trovato");
         }
         return post;

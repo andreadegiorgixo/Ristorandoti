@@ -35,6 +35,13 @@ export class PostService {
     return this.http.post<Post>(this.baseUrl, payload).pipe(catchError((err) => throwError(() => toApiError(err))));
   }
 
+  /** Modifica testo/foto di un post personale già pubblicato. Solo l'autore può modificarlo. */
+  update(postId: number, payload: CreatePostRequest): Observable<Post> {
+    return this.http
+      .put<Post>(`${this.baseUrl}/${postId}`, payload)
+      .pipe(catchError((err) => throwError(() => toApiError(err))));
+  }
+
   /** Pubblica un post come pagina aziendale. Solo proprietario o persone autorizzate. */
   createForAzienda(aziendaId: number, payload: CreatePostRequest): Observable<Post> {
     return this.http
